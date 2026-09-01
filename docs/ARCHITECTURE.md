@@ -176,7 +176,7 @@ every shared primitive from Companies and Contacts unchanged.
 - **Money**: `value_minor` is nullable — a deal's estimated value is often
   unknown before qualification — cast through `MoneyCast` (ADR-0002). The
   create/edit form collects it as a decimal string (`"1500.50"`); `Money::
-  fromDecimalString()`/`toDecimalString()` are the exact, non-rounding
+fromDecimalString()`/`toDecimalString()` are the exact, non-rounding
   boundary conversions between that string and minor units, validated by
   `App\Rules\ValidMoneyAmount` the same way `ValidEmailAddress` bridges
   `EmailAddress` into a Form Request.
