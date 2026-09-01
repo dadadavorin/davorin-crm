@@ -125,8 +125,35 @@ The first resource, and the pattern every later entity copies.
 
 ### Contacts
 
-_Filled in once the second resource exists, noting anywhere the shared
-primitives from Companies had to change to fit._
+The second resource. It reuses every shared primitive from Companies
+unchanged — `<ResourceTable>`, `<ResourceForm>`, `<StatusBadge>`,
+`<ConfirmDelete>`, `HasBoardStatus`, `BoardBuilder` and `MoveCardAction` — so
+nothing here required bending the abstractions T4 and T5 introduced.
+
+- **`contacts.email` has a partial unique index**, `WHERE deleted_at IS
+NULL`, so a soft-deleted contact's address can be reused while a live
+  duplicate is still rejected. Per `CONVENTIONS.md` §4 this is never a
+  check-then-insert: `CreateContact` and `UpdateContact` attempt the write
+  and translate a SQLSTATE `23505` into `DuplicateEmailException`, registered
+  in `ExceptionMap` like every other domain exception. The write itself runs
+  inside `DB::transaction()` so a unique-index violation is confined to a
+  savepoint instead of aborting a transaction a caller may have opened
+  around the action.
+- **`company_id` is nullable** — a contact with no company renders correctly
+  everywhere (index, detail, board) rather than being required to belong to
+  one.
+- **The delete asymmetry with companies is deliberate (ADR-0005).**
+  `DeleteCompany` refuses when live contacts exist —
+  `Company::dependentCounts()` now has a real `contacts` entry, counted from
+  the `contacts()` relation. `DeleteContact`, by contrast, is never refused:
+  nothing depends on a contact yet, and once deals exist (T7),
+  `deals.primary_contact_id` is nullable by design, so a contact's removal
+  nulls it there instead of being blocked.
+- **The company detail page lists its live contacts**, each linking to that
+  contact's own detail page — a plain query scoped to `company_id`, not a
+  new shared primitive.
+- `ContactStatus`: `New → Active → Inactive`, and `Inactive → Active`. No
+  terminal state, the same shape as `CompanyStatus`.
 
 ### Deals
 

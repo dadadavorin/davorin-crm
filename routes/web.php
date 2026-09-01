@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\CompanyController;
+use App\Http\Controllers\ContactController;
 use App\Support\InertiaRoute;
 use Illuminate\Support\Facades\Route;
 
@@ -21,7 +22,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('companies/board', [CompanyController::class, 'board'])->name('companies.board');
     Route::resource('companies', CompanyController::class);
 
-    InertiaRoute::get('contacts', 'placeholder', ['title' => 'Contacts'])->name('contacts.index');
+    Route::get('contacts/board', [ContactController::class, 'board'])->name('contacts.board');
+    Route::resource('contacts', ContactController::class);
+
     InertiaRoute::get('deals', 'placeholder', ['title' => 'Deals'])->name('deals.index');
     InertiaRoute::get('quotes', 'placeholder', ['title' => 'Quotes'])->name('quotes.index');
 });

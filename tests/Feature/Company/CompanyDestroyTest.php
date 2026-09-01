@@ -6,6 +6,7 @@ namespace Tests\Feature\Company;
 
 use App\Enums\UserRole;
 use App\Models\Company;
+use App\Models\Contact;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -56,6 +57,20 @@ class CompanyDestroyTest extends TestCase
         $this->actingAs($stranger)
             ->delete(route('companies.destroy', $company))
             ->assertForbidden();
+
+        $this->assertNotSoftDeleted($company);
+    }
+
+    public function test_a_company_with_live_contacts_cannot_be_deleted(): void
+    {
+        $owner = User::factory()->create();
+        $company = Company::factory()->create(['owner_id' => $owner->id]);
+        Contact::factory()->count(2)->create(['company_id' => $company->id]);
+
+        $this->actingAs($owner)
+            ->delete(route('companies.destroy', $company))
+            ->assertRedirect()
+            ->assertSessionHasErrors('record_has_dependents');
 
         $this->assertNotSoftDeleted($company);
     }
