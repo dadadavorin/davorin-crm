@@ -2,12 +2,17 @@
 
 declare(strict_types=1);
 
+use App\Exceptions\DomainException;
+use App\Exceptions\Rendering\InertiaExceptionRenderer;
+use App\Exceptions\Rendering\ProblemJsonExceptionRenderer;
 use App\Http\Middleware\HandleAppearance;
 use App\Http\Middleware\HandleInertiaRequests;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
 return Application::configure(basePath: dirname(__DIR__))
@@ -27,7 +32,13 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        $exceptions->shouldRenderJsonWhen(
-            fn (Request $request) => $request->is('api/*') || $request->expectsJson(),
+        $wantsJson = fn (Request $request): bool => $request->is('api/*') || $request->expectsJson();
+
+        $exceptions->shouldRenderJsonWhen($wantsJson);
+
+        $exceptions->render(
+            fn (DomainException $e, Request $request): JsonResponse|RedirectResponse => $wantsJson($request)
+                ? app(ProblemJsonExceptionRenderer::class)->render($e, $request)
+                : app(InertiaExceptionRenderer::class)->render($e, $request),
         );
     })->create();
