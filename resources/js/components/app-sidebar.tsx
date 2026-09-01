@@ -1,7 +1,12 @@
 import { Link } from '@inertiajs/react';
-import { BookOpen, FolderGit2, LayoutGrid } from 'lucide-react';
+import {
+    Building2,
+    Handshake,
+    LayoutGrid,
+    ReceiptText,
+    Users,
+} from 'lucide-react';
 import AppLogo from '@/components/app-logo';
-import { NavFooter } from '@/components/nav-footer';
 import { NavMain } from '@/components/nav-main';
 import { NavUser } from '@/components/nav-user';
 import {
@@ -14,6 +19,10 @@ import {
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
 import { dashboard } from '@/routes';
+import { index as companiesIndex } from '@/routes/companies';
+import { index as contactsIndex } from '@/routes/contacts';
+import { index as dealsIndex } from '@/routes/deals';
+import { index as quotesIndex } from '@/routes/quotes';
 import type { NavItem } from '@/types';
 
 const mainNavItems: NavItem[] = [
@@ -22,18 +31,25 @@ const mainNavItems: NavItem[] = [
         href: dashboard(),
         icon: LayoutGrid,
     },
-];
-
-const footerNavItems: NavItem[] = [
     {
-        title: 'Repository',
-        href: 'https://github.com/laravel/react-starter-kit',
-        icon: FolderGit2,
+        title: 'Companies',
+        href: companiesIndex(),
+        icon: Building2,
     },
     {
-        title: 'Documentation',
-        href: 'https://laravel.com/docs/starter-kits#react',
-        icon: BookOpen,
+        title: 'Contacts',
+        href: contactsIndex(),
+        icon: Users,
+    },
+    {
+        title: 'Deals',
+        href: dealsIndex(),
+        icon: Handshake,
+    },
+    {
+        title: 'Quotes',
+        href: quotesIndex(),
+        icon: ReceiptText,
     },
 ];
 
@@ -57,7 +73,6 @@ export function AppSidebar() {
             </SidebarContent>
 
             <SidebarFooter>
-                <NavFooter items={footerNavItems} className="mt-auto" />
                 <NavUser />
             </SidebarFooter>
         </Sidebar>
