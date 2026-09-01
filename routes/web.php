@@ -29,6 +29,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     Route::get('deals/board', [DealController::class, 'board'])->name('deals.board');
     Route::post('deals/{deal}/reopen', [DealController::class, 'reopen'])->name('deals.reopen');
+    Route::post('deals/{deal}/quotes', [DealController::class, 'storeQuote'])->name('deals.quotes.store');
     Route::resource('deals', DealController::class);
 
     Route::get('quotes/board', [QuoteController::class, 'board'])->name('quotes.board');

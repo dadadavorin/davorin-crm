@@ -8,14 +8,17 @@ use App\Actions\Deal\CreateDeal;
 use App\Actions\Deal\DeleteDeal;
 use App\Actions\Deal\ReopenDeal;
 use App\Actions\Deal\UpdateDeal;
+use App\Actions\Quote\CreateQuoteForDeal;
 use App\Board\BoardBuilder;
 use App\Board\BoardColumn;
 use App\Enums\DealStage;
 use App\Http\Requests\Deal\StoreDealRequest;
+use App\Http\Requests\Deal\StoreQuoteForDealRequest;
 use App\Http\Requests\Deal\UpdateDealRequest;
 use App\Models\Company;
 use App\Models\Contact;
 use App\Models\Deal;
+use App\Models\Quote;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -63,6 +66,10 @@ final class DealController extends Controller
 
         return Inertia::render('deals/board', [
             'columns' => array_map(fn (BoardColumn $column): array => $column->toArray(), $builder->build(Deal::class)),
+            'quoteDefaults' => [
+                'valid_until' => CreateQuoteForDeal::defaultValidUntil(),
+                'tax_rate' => CreateQuoteForDeal::defaultTaxRate(),
+            ],
         ]);
     }
 
@@ -89,14 +96,37 @@ final class DealController extends Controller
         return to_route('deals.show', $deal);
     }
 
+    public function storeQuote(Deal $deal, StoreQuoteForDealRequest $request, CreateQuoteForDeal $action): RedirectResponse
+    {
+        $user = Auth::user() ?? abort(401);
+
+        $quote = $action->handle($deal, $request->validated(), $user);
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Quote created.')]);
+
+        return to_route('quotes.edit', $quote);
+    }
+
     public function show(Deal $deal): Response
     {
         $this->authorize('view', $deal);
 
         $deal->load(['company:id,name', 'primaryContact:id,first_name,last_name', 'owner:id,name']);
 
+        $quotes = Quote::query()
+            ->where('deal_id', $deal->id)
+            ->orderByDesc('created_at')
+            ->get(['id', 'number', 'status', 'total_minor']);
+
         return Inertia::render('deals/show', [
             'deal' => $this->present($deal),
+            'quotes' => $quotes->map(fn (Quote $quote): array => [
+                'id' => $quote->id,
+                'number' => $quote->number,
+                'status' => $quote->status->value,
+                'status_label' => $quote->status->label(),
+                'total_minor' => $quote->total_minor->minorUnits,
+            ])->all(),
         ]);
     }
 

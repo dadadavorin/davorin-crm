@@ -1,17 +1,19 @@
 import { Head, Link } from '@inertiajs/react';
+import { CreateQuoteFromDealDialog } from '@/components/create-quote-from-deal-dialog';
 import { KanbanBoard } from '@/components/kanban-board';
 import { Button } from '@/components/ui/button';
 import { formatMoney } from '@/lib/money';
 import { dashboard } from '@/routes';
 import { board, index, show } from '@/routes/deals';
-import type { BreadcrumbItem, DealBoardCard } from '@/types';
+import type { BreadcrumbItem, DealBoardCard, QuoteDefaults } from '@/types';
 import type { BoardColumn } from '@/types/board';
 
 type Props = {
     columns: BoardColumn<DealBoardCard>[];
+    quoteDefaults: QuoteDefaults;
 };
 
-export default function DealsBoard({ columns }: Props) {
+export default function DealsBoard({ columns, quoteDefaults }: Props) {
     return (
         <>
             <Head title="Deals board" />
@@ -35,25 +37,31 @@ export default function DealsBoard({ columns }: Props) {
                     entity="deals"
                     columns={columns}
                     renderCard={(deal) => (
-                        <Link
-                            href={show.url(deal.id)}
-                            className="flex flex-col gap-1"
-                        >
-                            <span className="text-sm font-medium">
-                                {deal.title}
-                            </span>
-                            <span className="text-muted-foreground text-xs">
-                                {formatMoney(deal.value_minor)}
-                            </span>
-                            <span className="text-muted-foreground text-xs">
-                                {deal.company.name}
-                            </span>
-                            {deal.primary_contact && (
-                                <span className="text-muted-foreground text-xs">
-                                    {deal.primary_contact.name}
+                        <div className="flex flex-col gap-2">
+                            <Link
+                                href={show.url(deal.id)}
+                                className="flex flex-col gap-1"
+                            >
+                                <span className="text-sm font-medium">
+                                    {deal.title}
                                 </span>
-                            )}
-                        </Link>
+                                <span className="text-muted-foreground text-xs">
+                                    {formatMoney(deal.value_minor)}
+                                </span>
+                                <span className="text-muted-foreground text-xs">
+                                    {deal.company.name}
+                                </span>
+                                {deal.primary_contact && (
+                                    <span className="text-muted-foreground text-xs">
+                                        {deal.primary_contact.name}
+                                    </span>
+                                )}
+                            </Link>
+                            <CreateQuoteFromDealDialog
+                                dealId={deal.id}
+                                defaults={quoteDefaults}
+                            />
+                        </div>
                     )}
                 />
             </div>
