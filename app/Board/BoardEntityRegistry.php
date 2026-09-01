@@ -6,13 +6,14 @@ namespace App\Board;
 
 use App\Models\Company;
 use App\Models\Contact;
+use App\Models\Deal;
 use Illuminate\Database\Eloquent\Model;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 /**
  * The single place mapping a board move URL's `{entity}` segment to the
- * model class it moves. T7 and T8 add their entry here and nowhere else —
- * the move route, the controller and `MoveCardAction` are already generic.
+ * model class it moves. T8 adds its entry here and nowhere else — the move
+ * route, the controller and `MoveCardAction` are already generic.
  */
 final class BoardEntityRegistry
 {
@@ -22,6 +23,7 @@ final class BoardEntityRegistry
     private const array MAP = [
         'companies' => Company::class,
         'contacts' => Contact::class,
+        'deals' => Deal::class,
     ];
 
     /**

@@ -39,6 +39,12 @@ export type CompanyOption = {
     name: string;
 };
 
+export type ContactOption = {
+    id: number;
+    name: string;
+    company_name: string | null;
+};
+
 export type CompanyContact = {
     id: number;
     name: string;
@@ -71,4 +77,51 @@ export type ContactBoardCard = {
     company: CompanyOption | null;
     owner: OwnerOption | null;
     position: string;
+};
+
+export type DealStageValue =
+    | 'new'
+    | 'qualified'
+    | 'proposal'
+    | 'negotiation'
+    | 'won'
+    | 'lost';
+
+export type PrimaryContactOption = {
+    id: number;
+    name: string;
+};
+
+export type Deal = {
+    id: number;
+    title: string;
+    value_minor: number | null;
+    stage: DealStageValue;
+    stage_label: string;
+    is_terminal: boolean;
+    expected_close_date: string | null;
+    company: CompanyOption;
+    primary_contact: PrimaryContactOption | null;
+    owner: OwnerOption | null;
+    created_at: string | null;
+    updated_at: string | null;
+};
+
+export type DealBoardCard = {
+    id: number;
+    title: string;
+    value_minor: number | null;
+    expected_close_date: string | null;
+    company: CompanyOption;
+    primary_contact: PrimaryContactOption | null;
+    owner: OwnerOption | null;
+    position: string;
+};
+
+export type CompanyDeal = {
+    id: number;
+    title: string;
+    stage: DealStageValue;
+    stage_label: string;
+    value_minor: number | null;
 };

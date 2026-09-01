@@ -14,6 +14,7 @@ use App\Http\Requests\Contact\StoreContactRequest;
 use App\Http\Requests\Contact\UpdateContactRequest;
 use App\Models\Company;
 use App\Models\Contact;
+use App\Models\Deal;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -92,8 +93,20 @@ final class ContactController extends Controller
 
         $contact->load(['company:id,name', 'owner:id,name']);
 
+        $deals = Deal::query()
+            ->where('primary_contact_id', $contact->id)
+            ->orderBy('title')
+            ->get(['id', 'title', 'stage', 'value_minor']);
+
         return Inertia::render('contacts/show', [
             'contact' => $this->present($contact),
+            'deals' => $deals->map(fn (Deal $deal): array => [
+                'id' => $deal->id,
+                'title' => $deal->title,
+                'stage' => $deal->stage->value,
+                'stage_label' => $deal->stage->label(),
+                'value_minor' => $deal->value_minor?->minorUnits,
+            ])->all(),
         ]);
     }
 

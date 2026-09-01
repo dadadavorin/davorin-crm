@@ -47,6 +47,24 @@ final readonly class Money
         return new self(0);
     }
 
+    /**
+     * Parses a decimal amount (e.g. "1234.5" for €1,234.50) into exact minor
+     * units — no floats, since EUR always has exactly 2 minor-unit decimals
+     * a plain string split resolves without ever needing to round.
+     */
+    public static function fromDecimalString(string $value): self
+    {
+        if (! preg_match('/^-?\d+(\.\d{1,2})?$/', $value)) {
+            throw new InvalidArgumentException("Money::fromDecimalString() requires a decimal amount with at most 2 places, got \"{$value}\".");
+        }
+
+        $negative = str_starts_with($value, '-');
+        [$whole, $decimals] = array_pad(explode('.', ltrim($value, '-'), 2), 2, '');
+        $minorUnits = (int) ($whole.str_pad($decimals, 2, '0'));
+
+        return new self($negative ? -$minorUnits : $minorUnits);
+    }
+
     public function add(self $other): self
     {
         return new self($this->minorUnits + $other->minorUnits);
@@ -80,6 +98,18 @@ final readonly class Money
         [$numerator, $scale] = self::decimalToFraction($rate);
 
         return new self(self::divideHalfUp($this->minorUnits * $numerator, $scale));
+    }
+
+    /**
+     * The inverse of `fromDecimalString()` — exact integer division, since
+     * EUR's 2 minor-unit decimals never leave a remainder to round.
+     */
+    public function toDecimalString(): string
+    {
+        $negative = $this->minorUnits < 0;
+        $absolute = abs($this->minorUnits);
+
+        return ($negative ? '-' : '').intdiv($absolute, 100).'.'.str_pad((string) ($absolute % 100), 2, '0', STR_PAD_LEFT);
     }
 
     private static function wholeNumberFromString(string $value): int

@@ -105,6 +105,33 @@ describe('ResourceForm', () => {
         );
     });
 
+    it('renders a date input when inputType is date', () => {
+        mockErrors = {};
+
+        render(
+            <ResourceForm
+                form={{ action: '/deals', method: 'post' }}
+                fields={[
+                    ...fields,
+                    {
+                        type: 'text',
+                        name: 'expected_close_date',
+                        label: 'Expected close date',
+                        inputType: 'date',
+                    },
+                ]}
+                submitLabel="Create deal"
+                cancelHref="/deals"
+            />,
+        );
+
+        expect(screen.getByLabelText('Expected close date')).toHaveAttribute(
+            'type',
+            'date',
+        );
+        expect(screen.getByLabelText('Name')).toHaveAttribute('type', 'text');
+    });
+
     it('submits to the given action and method', () => {
         mockErrors = {};
 

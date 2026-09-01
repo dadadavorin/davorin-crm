@@ -8,6 +8,7 @@ use App\Actions\Company\DeleteCompany;
 use App\Exceptions\RecordHasDependentsException;
 use App\Models\Company;
 use App\Models\Contact;
+use App\Models\Deal;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\Fixtures\CompanyWithDependents;
 use Tests\TestCase;
@@ -58,6 +59,40 @@ class DeleteCompanyActionTest extends TestCase
         $company = Company::factory()->create();
         $contact = Contact::factory()->create(['company_id' => $company->id]);
         $contact->delete();
+
+        (new DeleteCompany)->handle($company->fresh());
+
+        $this->assertSoftDeleted($company);
+    }
+
+    public function test_a_company_with_live_deals_is_refused(): void
+    {
+        $company = Company::factory()->create();
+        Deal::factory()->count(2)->create(['company_id' => $company->id]);
+
+        $this->expectException(RecordHasDependentsException::class);
+        $this->expectExceptionMessage('Cannot delete this company: 2 live deals depend on it.');
+
+        (new DeleteCompany)->handle($company->fresh());
+    }
+
+    public function test_a_company_with_live_contacts_and_deals_names_both_in_the_message(): void
+    {
+        $company = Company::factory()->create();
+        Contact::factory()->create(['company_id' => $company->id]);
+        Deal::factory()->create(['company_id' => $company->id]);
+
+        $this->expectException(RecordHasDependentsException::class);
+        $this->expectExceptionMessage('Cannot delete this company: 1 live contact and 1 live deal depend on it.');
+
+        (new DeleteCompany)->handle($company->fresh());
+    }
+
+    public function test_a_company_with_only_soft_deleted_deals_is_deleted(): void
+    {
+        $company = Company::factory()->create();
+        $deal = Deal::factory()->create(['company_id' => $company->id]);
+        $deal->delete();
 
         (new DeleteCompany)->handle($company->fresh());
 

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Http\Controllers\CompanyController;
 use App\Http\Controllers\ContactController;
+use App\Http\Controllers\DealController;
 use App\Support\InertiaRoute;
 use Illuminate\Support\Facades\Route;
 
@@ -25,7 +26,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('contacts/board', [ContactController::class, 'board'])->name('contacts.board');
     Route::resource('contacts', ContactController::class);
 
-    InertiaRoute::get('deals', 'placeholder', ['title' => 'Deals'])->name('deals.index');
+    Route::get('deals/board', [DealController::class, 'board'])->name('deals.board');
+    Route::post('deals/{deal}/reopen', [DealController::class, 'reopen'])->name('deals.reopen');
+    Route::resource('deals', DealController::class);
+
     InertiaRoute::get('quotes', 'placeholder', ['title' => 'Quotes'])->name('quotes.index');
 });
 

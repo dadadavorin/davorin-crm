@@ -6,6 +6,7 @@ namespace Tests\Feature\Company;
 
 use App\Models\Company;
 use App\Models\Contact;
+use App\Models\Deal;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -60,6 +61,33 @@ class CompanyShowTest extends TestCase
             ->get(route('companies.show', $company))
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page->has('contacts', 0));
+    }
+
+    public function test_the_company_page_lists_its_deals(): void
+    {
+        $user = User::factory()->create();
+        $company = Company::factory()->create();
+        Deal::factory()->create(['company_id' => $company->id, 'title' => 'Renewal Deal']);
+        $deleted = Deal::factory()->create(['company_id' => $company->id]);
+        $deleted->delete();
+
+        $this->actingAs($user)
+            ->get(route('companies.show', $company))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->has('deals', 1)
+                ->where('deals.0.title', 'Renewal Deal'));
+    }
+
+    public function test_the_company_page_shows_an_empty_deals_list(): void
+    {
+        $user = User::factory()->create();
+        $company = Company::factory()->create();
+
+        $this->actingAs($user)
+            ->get(route('companies.show', $company))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page->has('deals', 0));
     }
 
     public function test_a_soft_deleted_company_is_not_found(): void

@@ -71,3 +71,41 @@ test('percentage rejects a negative rate', function (): void {
 test('the currency is a fixed application constant', function (): void {
     expect(Money::CURRENCY)->toBe('EUR');
 });
+
+test('fromDecimalString parses whole euros', function (): void {
+    expect(Money::fromDecimalString('1500')->minorUnits)->toBe(150_000);
+});
+
+test('fromDecimalString parses a single decimal place', function (): void {
+    expect(Money::fromDecimalString('1500.5')->minorUnits)->toBe(150_050);
+});
+
+test('fromDecimalString parses two decimal places exactly', function (): void {
+    expect(Money::fromDecimalString('1500.55')->minorUnits)->toBe(150_055);
+});
+
+test('fromDecimalString parses a negative amount', function (): void {
+    expect(Money::fromDecimalString('-25.10')->minorUnits)->toBe(-2510);
+});
+
+test('fromDecimalString rejects more than two decimal places', function (): void {
+    Money::fromDecimalString('12.345');
+})->throws(InvalidArgumentException::class);
+
+test('fromDecimalString rejects a non-numeric value', function (): void {
+    Money::fromDecimalString('not-a-number');
+})->throws(InvalidArgumentException::class);
+
+test('toDecimalString round-trips fromDecimalString exactly', function (): void {
+    expect(Money::fromDecimalString('1500.05')->toDecimalString())->toBe('1500.05');
+    expect(Money::fromDecimalString('0.09')->toDecimalString())->toBe('0.09');
+    expect(Money::fromMinorUnits(0)->toDecimalString())->toBe('0.00');
+});
+
+test('toDecimalString pads a single-digit remainder', function (): void {
+    expect(Money::fromMinorUnits(105)->toDecimalString())->toBe('1.05');
+});
+
+test('toDecimalString renders a negative amount', function (): void {
+    expect(Money::fromMinorUnits(-50)->toDecimalString())->toBe('-0.50');
+});

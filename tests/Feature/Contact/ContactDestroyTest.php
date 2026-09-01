@@ -6,6 +6,7 @@ namespace Tests\Feature\Contact;
 
 use App\Enums\UserRole;
 use App\Models\Contact;
+use App\Models\Deal;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -58,5 +59,19 @@ class ContactDestroyTest extends TestCase
             ->assertForbidden();
 
         $this->assertNotSoftDeleted($contact);
+    }
+
+    public function test_deleting_a_contact_nulls_it_on_live_deals_instead_of_being_blocked(): void
+    {
+        $owner = User::factory()->create();
+        $contact = Contact::factory()->create(['owner_id' => $owner->id]);
+        $deal = Deal::factory()->create(['primary_contact_id' => $contact->id]);
+
+        $this->actingAs($owner)
+            ->delete(route('contacts.destroy', $contact))
+            ->assertRedirect(route('contacts.index'));
+
+        $this->assertSoftDeleted($contact);
+        $this->assertNull($deal->fresh()->primary_contact_id);
     }
 }

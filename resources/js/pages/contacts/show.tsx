@@ -4,14 +4,18 @@ import { ConfirmDelete } from '@/components/confirm-delete';
 import { StatusBadge } from '@/components/status-badge';
 import { Button } from '@/components/ui/button';
 import { contactStatusVariant } from '@/lib/contact-status';
+import { dealStageVariant } from '@/lib/deal-stage';
+import { formatMoney } from '@/lib/money';
 import ContactController from '@/actions/App/Http/Controllers/ContactController';
 import { show as showCompany } from '@/routes/companies';
+import { show as showDeal } from '@/routes/deals';
 import { dashboard } from '@/routes';
 import { edit, index } from '@/routes/contacts';
-import type { BreadcrumbItem, Contact } from '@/types';
+import type { BreadcrumbItem, Contact, CompanyDeal } from '@/types';
 
 type Props = {
     contact: Contact;
+    deals: CompanyDeal[];
 };
 
 function Field({ label, value }: { label: string; value: React.ReactNode }) {
@@ -23,7 +27,7 @@ function Field({ label, value }: { label: string; value: React.ReactNode }) {
     );
 }
 
-export default function ContactsShow({ contact }: Props) {
+export default function ContactsShow({ contact, deals }: Props) {
     const fullName = `${contact.first_name} ${contact.last_name}`;
 
     return (
@@ -73,6 +77,44 @@ export default function ContactsShow({ contact }: Props) {
                         }
                     />
                     <Field label="Owner" value={contact.owner?.name ?? '—'} />
+                </div>
+
+                <div className="border-sidebar-border/70 dark:border-sidebar-border rounded-xl border p-6">
+                    <h2 className="mb-4 text-sm font-semibold">
+                        Deals (primary contact)
+                    </h2>
+                    {deals.length === 0 ? (
+                        <p className="text-muted-foreground text-sm">
+                            No deals yet.
+                        </p>
+                    ) : (
+                        <ul className="divide-sidebar-border/70 dark:divide-sidebar-border divide-y">
+                            {deals.map((deal) => (
+                                <li
+                                    key={deal.id}
+                                    className="flex items-center justify-between gap-4 py-2"
+                                >
+                                    <Link
+                                        href={showDeal.url(deal.id)}
+                                        className="text-sm hover:underline"
+                                    >
+                                        {deal.title}
+                                    </Link>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-muted-foreground text-xs">
+                                            {formatMoney(deal.value_minor)}
+                                        </span>
+                                        <StatusBadge
+                                            label={deal.stage_label}
+                                            variant={dealStageVariant(
+                                                deal.stage,
+                                            )}
+                                        />
+                                    </div>
+                                </li>
+                            ))}
+                        </ul>
+                    )}
                 </div>
             </div>
         </>
