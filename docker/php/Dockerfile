@@ -8,7 +8,7 @@ RUN apk add --no-cache \
         postgresql-dev \
         $PHPIZE_DEPS \
         linux-headers \
-    && docker-php-ext-install pdo_pgsql pgsql \
+    && docker-php-ext-install pdo_pgsql pgsql bcmath \
     && pecl install xdebug \
     && docker-php-ext-enable xdebug \
     && apk del $PHPIZE_DEPS linux-headers
