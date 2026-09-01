@@ -193,8 +193,10 @@ fromDecimalString()`/`toDecimalString()` are the exact, non-rounding
 - **Company and contact detail pages list their deals** — the company's via
   `deals.company_id`, the contact's via `deals.primary_contact_id` — plain
   scoped queries, not a new shared primitive.
-- Nothing depends on a deal yet, so `DeleteDeal` is never refused; quotes
-  (T8) will be the first thing that can.
+- `quotes.deal_id` is a required FK, so `Deal::dependentCounts()` blocks a
+  deal with live quotes the same way `Company::dependentCounts()` blocks a
+  company above — `DeleteDeal` refuses via `RecordHasDependentsException`,
+  naming the count.
 - **The deal-board shortcut** (T9) puts a "Create quote" action on every deal
   card: it opens a small dialog for the two fields a quote doesn't otherwise
   default for itself (`valid_until`, `tax_rate`) and, on submit, creates a
