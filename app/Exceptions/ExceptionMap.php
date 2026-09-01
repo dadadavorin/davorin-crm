@@ -23,6 +23,7 @@ final class ExceptionMap
         UnknownBoardStatusException::class => ['status' => 422, 'key' => 'unknown_board_status'],
         IllegalStatusTransitionException::class => ['status' => 422, 'key' => 'illegal_status_transition'],
         InvalidBoardNeighbourException::class => ['status' => 422, 'key' => 'invalid_board_neighbour'],
+        DuplicateEmailException::class => ['status' => 422, 'key' => 'duplicate_email'],
     ];
 
     private const array DEFAULT = ['status' => 500, 'key' => 'server_error'];

@@ -13,6 +13,7 @@ use App\Enums\CompanyStatus;
 use App\Http\Requests\Company\StoreCompanyRequest;
 use App\Http\Requests\Company\UpdateCompanyRequest;
 use App\Models\Company;
+use App\Models\Contact;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -90,8 +91,20 @@ final class CompanyController extends Controller
 
         $company->load('owner:id,name');
 
+        $contacts = Contact::query()
+            ->where('company_id', $company->id)
+            ->orderBy('first_name')
+            ->orderBy('last_name')
+            ->get(['id', 'first_name', 'last_name', 'status']);
+
         return Inertia::render('companies/show', [
             'company' => $this->present($company),
+            'contacts' => $contacts->map(fn (Contact $contact): array => [
+                'id' => $contact->id,
+                'name' => trim("{$contact->first_name} {$contact->last_name}"),
+                'status' => $contact->status->value,
+                'status_label' => $contact->status->label(),
+            ])->all(),
         ]);
     }
 

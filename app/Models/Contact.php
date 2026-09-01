@@ -5,39 +5,37 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Board\HasBoardStatus;
-use App\Enums\CompanyStatus;
+use App\Enums\ContactStatus;
 use App\Support\EmailAddress;
 use App\Support\EmailAddressCast;
-use Database\Factories\CompanyFactory;
+use Database\Factories\ContactFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
 
 /**
  * @property int $id
- * @property string $name
- * @property CompanyStatus $status
- * @property string|null $industry
- * @property string|null $website
+ * @property string $first_name
+ * @property string $last_name
  * @property EmailAddress|null $email
  * @property string|null $phone
- * @property string|null $address
- * @property string|null $notes
+ * @property string|null $job_title
+ * @property ContactStatus $status
  * @property string $position
+ * @property int|null $company_id
  * @property int|null $owner_id
  * @property Carbon|null $deleted_at
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
-#[Fillable(['name', 'status', 'industry', 'website', 'email', 'phone', 'address', 'notes', 'owner_id', 'position'])]
-class Company extends Model implements HasBoardStatus
+#[Fillable(['first_name', 'last_name', 'email', 'phone', 'job_title', 'status', 'position', 'company_id', 'owner_id'])]
+class Contact extends Model implements HasBoardStatus
 {
-    /** @use HasFactory<CompanyFactory> */
+    /** @use HasFactory<ContactFactory> */
     use HasFactory, SoftDeletes;
 
     /**
@@ -46,10 +44,18 @@ class Company extends Model implements HasBoardStatus
     protected function casts(): array
     {
         return [
-            'status' => CompanyStatus::class,
+            'status' => ContactStatus::class,
             'email' => EmailAddressCast::class,
             'position' => 'decimal:10',
         ];
+    }
+
+    /**
+     * @return BelongsTo<Company, $this>
+     */
+    public function company(): BelongsTo
+    {
+        return $this->belongsTo(Company::class);
     }
 
     /**
@@ -60,17 +66,9 @@ class Company extends Model implements HasBoardStatus
         return $this->belongsTo(User::class);
     }
 
-    /**
-     * @return HasMany<Contact, $this>
-     */
-    public function contacts(): HasMany
-    {
-        return $this->hasMany(Contact::class);
-    }
-
     public static function boardStatusEnum(): string
     {
-        return CompanyStatus::class;
+        return ContactStatus::class;
     }
 
     public static function boardStatusColumn(): string
@@ -83,7 +81,7 @@ class Company extends Model implements HasBoardStatus
      */
     public static function boardCardRelations(): array
     {
-        return ['owner:id,name'];
+        return ['company:id,name', 'owner:id,name'];
     }
 
     /**
@@ -93,8 +91,13 @@ class Company extends Model implements HasBoardStatus
     {
         return [
             'id' => $this->id,
-            'name' => $this->name,
-            'industry' => $this->industry,
+            'first_name' => $this->first_name,
+            'last_name' => $this->last_name,
+            'job_title' => $this->job_title,
+            'company' => $this->company === null ? null : [
+                'id' => $this->company->id,
+                'name' => $this->company->name,
+            ],
             'owner' => $this->owner === null ? null : [
                 'id' => $this->owner->id,
                 'name' => $this->owner->name,
@@ -104,32 +107,18 @@ class Company extends Model implements HasBoardStatus
     }
 
     /**
-     * Live (non-deleted) record counts that block this company's deletion,
-     * keyed by plural relation label. Deals (T7) add a second entry here,
-     * not a new call site in `DeleteCompany`.
+     * Case-insensitive search across the full name, escaping the `ILIKE`
+     * metacharacters `\`, `%` and `_` with an explicit `ESCAPE` clause so a
+     * literal percent or underscore in the search box can't turn into a
+     * wildcard.
      *
-     * @return array<string, int>
-     */
-    public function dependentCounts(): array
-    {
-        return array_filter([
-            'contacts' => $this->contacts()->count(),
-        ], fn (int $count): bool => $count > 0);
-    }
-
-    /**
-     * Case-insensitive prefix/substring search on `name`, escaping the
-     * `ILIKE` metacharacters `\`, `%` and `_` with an explicit `ESCAPE`
-     * clause so a literal percent or underscore in the search box can't
-     * turn into a wildcard.
-     *
-     * @param  Builder<Company>  $query
-     * @return Builder<Company>
+     * @param  Builder<Contact>  $query
+     * @return Builder<Contact>
      */
     public function scopeSearch(Builder $query, string $term): Builder
     {
         $escaped = str_replace(['\\', '%', '_'], ['\\\\', '\\%', '\\_'], $term);
 
-        return $query->whereRaw('name ILIKE ? ESCAPE ?', ["%{$escaped}%", '\\']);
+        return $query->whereRaw("(first_name || ' ' || last_name) ILIKE ? ESCAPE ?", ["%{$escaped}%", '\\']);
     }
 }

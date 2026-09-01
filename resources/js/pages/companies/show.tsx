@@ -4,13 +4,16 @@ import { ConfirmDelete } from '@/components/confirm-delete';
 import { StatusBadge } from '@/components/status-badge';
 import { Button } from '@/components/ui/button';
 import { companyStatusVariant } from '@/lib/company-status';
+import { contactStatusVariant } from '@/lib/contact-status';
 import CompanyController from '@/actions/App/Http/Controllers/CompanyController';
 import { dashboard } from '@/routes';
 import { edit, index } from '@/routes/companies';
-import type { BreadcrumbItem, Company } from '@/types';
+import { show as showContact } from '@/routes/contacts';
+import type { BreadcrumbItem, Company, CompanyContact } from '@/types';
 
 type Props = {
     company: Company;
+    contacts: CompanyContact[];
 };
 
 function Field({ label, value }: { label: string; value: React.ReactNode }) {
@@ -22,7 +25,7 @@ function Field({ label, value }: { label: string; value: React.ReactNode }) {
     );
 }
 
-export default function CompaniesShow({ company }: Props) {
+export default function CompaniesShow({ company, contacts }: Props) {
     return (
         <>
             <Head title={company.name} />
@@ -61,6 +64,37 @@ export default function CompaniesShow({ company }: Props) {
                     <Field label="Owner" value={company.owner?.name ?? '—'} />
                     <Field label="Address" value={company.address ?? '—'} />
                     <Field label="Notes" value={company.notes ?? '—'} />
+                </div>
+
+                <div className="border-sidebar-border/70 dark:border-sidebar-border rounded-xl border p-6">
+                    <h2 className="mb-4 text-sm font-semibold">Contacts</h2>
+                    {contacts.length === 0 ? (
+                        <p className="text-muted-foreground text-sm">
+                            No contacts yet.
+                        </p>
+                    ) : (
+                        <ul className="divide-sidebar-border/70 dark:divide-sidebar-border divide-y">
+                            {contacts.map((contact) => (
+                                <li
+                                    key={contact.id}
+                                    className="flex items-center justify-between py-2"
+                                >
+                                    <Link
+                                        href={showContact.url(contact.id)}
+                                        className="text-sm hover:underline"
+                                    >
+                                        {contact.name}
+                                    </Link>
+                                    <StatusBadge
+                                        label={contact.status_label}
+                                        variant={contactStatusVariant(
+                                            contact.status,
+                                        )}
+                                    />
+                                </li>
+                            ))}
+                        </ul>
+                    )}
                 </div>
             </div>
         </>
