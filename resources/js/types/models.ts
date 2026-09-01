@@ -25,3 +25,11 @@ export type StatusOption = {
     value: string;
     label: string;
 };
+
+export type CompanyBoardCard = {
+    id: number;
+    name: string;
+    industry: string | null;
+    owner: OwnerOption | null;
+    position: string;
+};

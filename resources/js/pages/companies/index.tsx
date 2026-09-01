@@ -9,7 +9,7 @@ import { StatusBadge } from '@/components/status-badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { companyStatusVariant } from '@/lib/company-status';
-import { create, index, show } from '@/routes/companies';
+import { board, create, index, show } from '@/routes/companies';
 import { dashboard } from '@/routes';
 import type { BreadcrumbItem, Company, Paginated } from '@/types';
 
@@ -95,9 +95,14 @@ export default function CompaniesIndex({ companies, filters }: Props) {
                         title="Companies"
                         description="Every company in the CRM, across every status."
                     />
-                    <Button asChild>
-                        <Link href={create()}>New company</Link>
-                    </Button>
+                    <div className="flex items-center gap-2">
+                        <Button asChild variant="secondary">
+                            <Link href={board()}>Board view</Link>
+                        </Button>
+                        <Button asChild>
+                            <Link href={create()}>New company</Link>
+                        </Button>
+                    </div>
                 </div>
 
                 <form

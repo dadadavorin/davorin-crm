@@ -20,6 +20,9 @@ final class ExceptionMap
      */
     private const array MAP = [
         RecordHasDependentsException::class => ['status' => 422, 'key' => 'record_has_dependents'],
+        UnknownBoardStatusException::class => ['status' => 422, 'key' => 'unknown_board_status'],
+        IllegalStatusTransitionException::class => ['status' => 422, 'key' => 'illegal_status_transition'],
+        InvalidBoardNeighbourException::class => ['status' => 422, 'key' => 'invalid_board_neighbour'],
     ];
 
     private const array DEFAULT = ['status' => 500, 'key' => 'server_error'];

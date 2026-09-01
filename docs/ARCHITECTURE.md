@@ -140,9 +140,53 @@ block, tax rate), immutability from `Sent` onward, and quote numbering._
 
 ## The board engine
 
-_Filled in once the kanban engine and the first board (Companies) exist:
-`HasBoardStatus`, `BoardBuilder`'s eager loading, `MoveCardAction`'s
-transaction and rebalance strategy, and the JSON move endpoint._
+One engine, shared by all four entities: each contributes only its status
+enum, a `HasBoardStatus` implementation on its model, a card component and a
+policy. Nothing board-specific lives outside `app/Board/`.
+
+- **`HasBoardStatus`** (`app/Board/HasBoardStatus.php`) is the model-side
+  contract: which enum holds the status (`boardStatusEnum()`), which column
+  it lives in (`boardStatusColumn()` — `status` for most entities, `stage`
+  for deals), which relations a card needs eager-loaded
+  (`boardCardRelations()`), and how to render one card
+  (`toBoardCard()`). `BoardBuilder` and `MoveCardAction` depend on this
+  contract only, never on a concrete entity. The enum side of the same
+  contract is `App\Enums\Concerns\BoardStatus`, which every board-driven
+  status enum implements alongside `HasTransitions`.
+- **`BoardBuilder`** (`app/Board/BoardBuilder.php`) turns a model class into
+  one column per enum case, ordered by `boardOrder()`. It owns the eager
+  loading: one query for every live row plus one query per relation in
+  `boardCardRelations()` — a fixed count regardless of how many cards exist,
+  never one query per row. Each column is capped at 50 cards with a
+  `has_more` count past the cap.
+- **`MoveCardAction`** (`app/Board/MoveCardAction.php`) resolves the target
+  status, checks the transition is legal (or a same-column reorder), and
+  computes the new `position` as the midpoint of the two neighbour ids the
+  request names — rebalancing the column first if the gap between them has
+  shrunk too far to bisect safely. All of it runs inside one transaction
+  with every row it touches locked. See the class's own docblock for the
+  full diagram and the rebalance threshold's reasoning.
+- **`BoardEntityRegistry`** (`app/Board/BoardEntityRegistry.php`) is the
+  single place mapping a board move URL's `{entity}` segment to the model
+  class it moves — the only file a later entity's board needs to touch
+  beyond its own enum, card component and policy.
+- **The move endpoint**, `POST /api/v1/boards/{entity}/{id}/move`, is the
+  JSON surface named in ADR-0006: session-authenticated through the `web`
+  middleware group like the rest of the app, but never Inertia, so a
+  rejection comes back as a real `422` `problem+json` body a `fetch` call
+  can branch on instead of a redirect with flashed errors. It returns `204`
+  on success.
+- **The board page itself is a plain Inertia route** (`GET
+/companies/board`, one per entity) — only the move is special. The
+  controller calls `BoardBuilder` and renders the board component with its
+  columns as props, the same as any other page.
+- **`<KanbanBoard>`** (`resources/js/components/kanban-board.tsx`) is the
+  one React component every board reuses, generic over its card type. Drag
+  state lives in `useKanbanBoard`
+  (`resources/js/hooks/use-kanban-board.ts`): a drop is applied to local
+  state immediately, posted to the move endpoint, and — on a rejection —
+  reverted back to what it was before the drop, with the server's reason
+  shown as a toast.
 
 ## Money and totals pipeline
 

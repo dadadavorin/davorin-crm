@@ -18,6 +18,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ],
     ])->name('dashboard');
 
+    Route::get('companies/board', [CompanyController::class, 'board'])->name('companies.board');
     Route::resource('companies', CompanyController::class);
 
     InertiaRoute::get('contacts', 'placeholder', ['title' => 'Contacts'])->name('contacts.index');
