@@ -73,27 +73,44 @@ jobs:
       - name: Test
         run: composer test
 
-  # Enable once the frontend has Vitest wired up, then add "frontend" to
-  # .github/branch-protection.json and re-apply protection.
-  # frontend:
-  #   runs-on: ubuntu-latest
-  #
-  #   steps:
-  #     - uses: actions/checkout@v4
-  #
-  #     - uses: actions/setup-node@v4
-  #       with:
-  #         node-version: "22"
-  #         cache: npm
-  #
-  #     - name: Install dependencies
-  #       run: npm install
-  #
-  #     - name: Type check and lint
-  #       run: npm run check
-  #
-  #     - name: Test
-  #       run: npm run test
+  frontend:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.4"
+          coverage: none
+
+      - name: Install PHP dependencies
+        run: composer install --no-interaction --prefer-dist
+        env:
+          COMPOSER_AUTH: '{"github-oauth":{"github.com":"${{ secrets.GITHUB_TOKEN }}"}}'
+
+      - name: Copy environment file
+        run: cp .env.example .env
+
+      - name: Generate application key
+        run: php artisan key:generate
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Generate Wayfinder routes and actions
+        run: php artisan wayfinder:generate --with-form
+
+      - name: Type check and lint
+        run: npm run check
+
+      - name: Test
+        run: npm run test
 
   # Enable once end-to-end specs exist, then add "e2e" to
   # .github/branch-protection.json and re-apply protection.

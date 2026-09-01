@@ -55,6 +55,10 @@ export default defineConfig({
             denyWarnings: true,
             typeAware: true,
         },
+        rules: {
+            'typescript/no-explicit-any': 'error',
+            'typescript/no-non-null-assertion': 'error',
+        },
     },
     fmt: {
         printWidth: 80,
@@ -73,5 +77,10 @@ export default defineConfig({
             functions: ['clsx', 'cn', 'cva'],
             entryPoint: 'resources/css/app.css',
         },
+    },
+    test: {
+        include: ['resources/js/**/*.test.{ts,tsx}'],
+        environment: 'jsdom',
+        setupFiles: ['resources/js/testing/setup.ts'],
     },
 });
