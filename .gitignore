@@ -1,0 +1,56 @@
+# PHP
+/vendor/
+.env
+.env.backup
+.env.production
+.phpunit.result.cache
+.phpunit.cache/
+/storage/*.key
+/storage/framework/cache/*
+/storage/framework/sessions/*
+/storage/framework/views/*
+/storage/logs/*
+/storage/pail
+/storage/inertia-devtools
+/bootstrap/cache/*
+/bootstrap/ssr
+!.gitkeep
+
+# Node / frontend build
+/node_modules/
+/public/build
+/public/hot
+/public/fonts-manifest.dev.json
+/public/storage
+/resources/js/actions
+/resources/js/routes
+/resources/js/wayfinder
+npm-debug.log*
+yarn-error.log*
+
+# Playwright
+/e2e/test-results/
+/e2e/playwright-report/
+/e2e/.cache/
+
+# Docker
+docker-compose.override.yml
+
+# IDE / OS
+.idea/
+.vscode/*
+!.vscode/extensions.json
+.fleet/
+.nova/
+.zed/
+.DS_Store
+*.swp
+
+# Coverage
+/coverage/
+
+# Local-only, never committed
+/auth.json
+.phpactor.json
+Homestead.json
+Homestead.yaml
