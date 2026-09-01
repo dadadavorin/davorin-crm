@@ -17,12 +17,14 @@ use App\Models\Deal;
 use App\Models\Quote;
 use App\Models\QuoteItem;
 use App\Models\User;
+use App\Services\QuotePdfRenderer;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Date;
 use Inertia\Inertia;
 use Inertia\Response;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 final class QuoteController extends Controller
 {
@@ -142,6 +144,23 @@ final class QuoteController extends Controller
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Quote deleted.')]);
 
         return to_route('quotes.index');
+    }
+
+    public function pdf(Quote $quote, QuotePdfRenderer $renderer): StreamedResponse
+    {
+        $this->authorize('view', $quote);
+
+        $quote->load('items');
+
+        $pdf = $renderer->render($quote);
+
+        return response()->streamDownload(
+            function () use ($pdf): void {
+                echo $pdf;
+            },
+            "quote-{$quote->number}.pdf",
+            ['Content-Type' => 'application/pdf'],
+        );
     }
 
     public function reopen(Quote $quote, ReopenQuote $action): RedirectResponse
