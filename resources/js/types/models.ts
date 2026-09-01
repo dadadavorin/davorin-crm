@@ -125,3 +125,65 @@ export type CompanyDeal = {
     stage_label: string;
     value_minor: number | null;
 };
+
+export type QuoteStatusValue =
+    | 'draft'
+    | 'sent'
+    | 'accepted'
+    | 'rejected'
+    | 'expired';
+
+export type DealOption = {
+    id: number;
+    title: string;
+    company_name: string;
+};
+
+export type DealOnQuote = {
+    id: number;
+    title: string;
+};
+
+export type QuoteItem = {
+    id: number;
+    description: string;
+    quantity: number;
+    unit_price_minor: number;
+    line_total_minor: number;
+};
+
+export type Quote = {
+    id: number;
+    number: string;
+    status: QuoteStatusValue;
+    status_label: string;
+    is_terminal: boolean;
+    is_draft: boolean;
+    deal: DealOnQuote;
+    issue_date: string | null;
+    valid_until: string | null;
+    tax_rate: string;
+    subtotal_minor: number;
+    tax_minor: number;
+    total_minor: number;
+    bill_to_company_name: string;
+    bill_to_address: string | null;
+    bill_to_contact_name: string | null;
+    bill_to_contact_email: string | null;
+    notes: string | null;
+    terms: string | null;
+    owner: OwnerOption | null;
+    items: QuoteItem[];
+    created_at: string | null;
+    updated_at: string | null;
+};
+
+export type QuoteBoardCard = {
+    id: number;
+    number: string;
+    total_minor: number;
+    valid_until: string | null;
+    deal: DealOnQuote;
+    owner: OwnerOption | null;
+    position: string;
+};

@@ -24,6 +24,7 @@ final class ExceptionMap
         IllegalStatusTransitionException::class => ['status' => 422, 'key' => 'illegal_status_transition'],
         InvalidBoardNeighbourException::class => ['status' => 422, 'key' => 'invalid_board_neighbour'],
         DuplicateEmailException::class => ['status' => 422, 'key' => 'duplicate_email'],
+        QuoteNotEditableException::class => ['status' => 422, 'key' => 'quote_not_editable'],
     ];
 
     private const array DEFAULT = ['status' => 500, 'key' => 'server_error'];

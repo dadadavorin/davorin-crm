@@ -198,10 +198,59 @@ fromDecimalString()`/`toDecimalString()` are the exact, non-rounding
 
 ### Quotes
 
-### Quotes
+The fourth resource, and the most complex: a document with its own line
+items, a stored numbering sequence, and a freeze that locks most of it once
+it leaves `Draft`. Reuses the shared frontend primitives from Companies and
+the board engine from T5, contributing its own `QuoteStatus` enum, card
+component and policy like every other entity.
 
-_Filled in once Quotes exists: the snapshot model (line items, customer
-block, tax rate), immutability from `Sent` onward, and quote numbering._
+- **`quotes.number`** comes from a Postgres sequence, `quote_number_seq`,
+  formatted in PHP as `Q-{year}-{0000}` (`GenerateQuoteNumber`). The
+  sequence already guarantees a unique value; the unique index on `number`
+  is a backstop, not the primary mechanism — `CreateQuote` translates a
+  `23505` into a retry with a fresh sequence value rather than checking
+  existence first, per `CONVENTIONS.md` §4.
+- **`QuoteStatus`**: `Draft → Sent → Accepted|Rejected|Expired`. `Accepted`,
+  `Rejected` and `Expired` are terminal in the enum's own transition graph,
+  the same shape as `DealStage`'s `Won`/`Lost` (T7) — the board
+  (`MoveCardAction::canTransitionTo()`) refuses every drag out of them.
+  `Expired` is set by the `quotes:expire` scheduled command
+  (`app/Console/Commands/ExpireQuotes.php`, run daily) once `valid_until`
+  has passed, never derived at render time, so the board and every listing
+  can trust the stored value directly. Reopening a terminal quote to `Sent`
+  is a deliberate exception `Quote::booted()` carves out for itself
+  (`ReopenQuote`), not a transition the enum allows — the same pattern as
+  `Deal::booted()`'s reopen-to-`Negotiation` carve-out. The same guard also
+  refuses `Sent` reverting to `Draft` directly, since nothing else here
+  would stop it.
+- **The immutability freeze** is the other half of `Quote::booted()`: once a
+  quote's _persisted_ status is no longer `Draft`, any write touching
+  `tax_rate`, the three money columns, or the four `bill_to_*` snapshot
+  columns is rejected with `QuoteNotEditableException` — including a direct
+  `save()` that bypasses `UpdateQuote` entirely. `QuoteItem::booted()`
+  mirrors this from the item side: once the parent quote is not `Draft`, no
+  item create, update or delete is accepted either, checked with a fresh
+  query against the quote's current status rather than through a
+  `belongsTo` relation that might already be cached from before the quote
+  itself transitioned elsewhere in the same request. `notes`, `terms` and
+  `status` itself are never frozen — only line items, money and the
+  customer block are.
+- **`ReplaceQuoteItems`** rewrites a quote's entire item set on every write
+  (both create and update) rather than diffing individual rows — line items
+  are always edited as one set from the inline editor, and a full replace
+  keeps `sort_order` trivially correct. It refuses outright once the quote
+  is not `Draft`, which is what actually stops the bulk `delete()` a
+  replace starts with (a bulk relation `delete()`, unlike a single model's
+  own `delete()`, does not fire `QuoteItem::booted()`'s per-row guard).
+- **Standalone create is the only creation path in this task** — the create
+  form has a deal picker (`deal_id` is required); the deal-board shortcut
+  (T9) is an additional entry point onto the same mechanics, not a
+  different one.
+- **CRUD** follows the same shape as the other three entities, with one
+  addition: the edit form's line-item table and `tax_rate` field are
+  disabled once the quote is no longer `Draft`, matching what
+  `Quote::booted()` would reject anyway — the UI mirrors the guard rather
+  than working around it.
 
 ## The board engine
 
@@ -255,15 +304,68 @@ policy. Nothing board-specific lives outside `app/Board/`.
 
 ## Money and totals pipeline
 
-_Filled in once `Money` and `RecalculateQuoteTotals` exist: the rounding
-rule, and how a quote's stored totals stay provably equal to a fresh
-recomputation from its line items._
+`Money` (`app/Support/Money.php`) wraps integer minor units; every operation
+except one is exact integer arithmetic with no rounding at all — `add`,
+`subtract`, `multiplyBy` a whole-number quantity. The single rounding point
+in the entire codebase is `Money::percentage()`, half-up to the nearest
+minor unit, computed with exact integer arithmetic rather than floats (see
+ADR-0002 and the class's own docblock for the full pipeline diagram).
+
+`RecalculateQuoteTotals` (`app/Actions/Quote/RecalculateQuoteTotals.php`) is
+the one place that pipeline is applied to a document: it sums every item's
+`line_total_minor` into a subtotal, applies the quote's snapshotted
+`tax_rate` once at the document level to get the tax, and adds the two for
+the total. It runs once per request, after the whole item set has been
+written, inside the same transaction as that write (`CreateQuote`,
+`UpdateQuote`) — never per item, never speculatively. It only sets
+attributes; the caller folds the save into whichever single `save()` call
+also carries the rest of that request's changes, so `Quote::booted()`'s
+freeze guard — which reads the status as it stood _before_ the write —
+never sees an intermediate state that doesn't actually exist.
+
+This is what makes the totals-invariant test load-bearing rather than
+incidental: because nothing recomputes a total anywhere else, and the only
+rounding happens once, in one place, a stored `subtotal_minor`/`tax_minor`/
+`total_minor` can be asserted exactly equal to a fresh recomputation from
+`items()` and `tax_rate` — no tolerance, no drift.
 
 ## Snapshot and delete model
 
-_Filled in once Quotes and the delete-refusal behavior across all four
-entities exist: what gets snapshotted, when, and why plain `SoftDeletes`
-without cascade or restore was chosen over the alternatives._
+Three things get frozen onto a quote, all at write time, all read back
+verbatim rather than resolved live: the **line items** (`QuoteItem`'s
+`description` and `unit_price_minor`, never joined from a product
+catalogue), the **customer block** (`bill_to_company_name`,
+`bill_to_address`, `bill_to_contact_name`, `bill_to_contact_email`, derived
+from the deal's company and primary contact by `SnapshotCustomerBlock` at
+creation), and the **tax rate** (`tax_rate`, used by every later totals
+recomputation instead of whatever rate is current elsewhere). A company
+rename, a contact's email change, or a later change to whatever default tax
+rate a new quote offers must never alter a quote that already captured its
+own values — that is the entire reason a snapshot exists instead of a
+foreign key plus a join. `Quote::booted()` and `QuoteItem::booted()` enforce
+that nothing can un-freeze these fields once the quote leaves `Draft`,
+covered in the Quotes section above.
+
+Every entity uses plain `SoftDeletes` with no cascade, no batch ids, no
+restore UI (ADR-0005) — soft delete is a data-safety net, not a
+user-facing feature, so a mistaken delete is recoverable by direct database
+access but never advertised as reversible in the product itself. The
+delete-refusal behavior is asymmetric by design, following one rule
+consistently: a **required** foreign key blocks the referenced record's
+deletion, a **nullable** one nulls out instead.
+
+- `deals.company_id` and `quotes.deal_id` are required, so
+  `Company::dependentCounts()` blocks a company with live contacts or
+  deals, and `Deal::dependentCounts()` blocks a deal with live quotes —
+  both refuse via `RecordHasDependentsException`, naming what blocks them.
+- `deals.primary_contact_id` is nullable, so `DeleteContact` nulls it on
+  every live deal that named it instead of being refused — a person
+  outliving their employer is normal, and nothing downstream requires a
+  contact to exist.
+- Nothing has a foreign key onto a quote, so `DeleteQuote` is never
+  refused — the asymmetry doesn't extend a fourth level because nothing
+  yet depends on a quote the way a deal depends on nothing and a company
+  depends on everything below it.
 
 ## PDF export
 

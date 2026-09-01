@@ -7,6 +7,7 @@ namespace App\Board;
 use App\Models\Company;
 use App\Models\Contact;
 use App\Models\Deal;
+use App\Models\Quote;
 use Illuminate\Database\Eloquent\Model;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
@@ -24,6 +25,7 @@ final class BoardEntityRegistry
         'companies' => Company::class,
         'contacts' => Contact::class,
         'deals' => Deal::class,
+        'quotes' => Quote::class,
     ];
 
     /**
