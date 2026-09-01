@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Http\Controllers\CompanyController;
 use App\Support\InertiaRoute;
 use Illuminate\Support\Facades\Route;
 
@@ -17,7 +18,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ],
     ])->name('dashboard');
 
-    InertiaRoute::get('companies', 'placeholder', ['title' => 'Companies'])->name('companies.index');
+    Route::resource('companies', CompanyController::class);
+
     InertiaRoute::get('contacts', 'placeholder', ['title' => 'Contacts'])->name('contacts.index');
     InertiaRoute::get('deals', 'placeholder', ['title' => 'Deals'])->name('deals.index');
     InertiaRoute::get('quotes', 'placeholder', ['title' => 'Quotes'])->name('quotes.index');

@@ -90,8 +90,38 @@ reasoning.
 
 ### Companies
 
-_Filled in once the first resource — controller, policy, actions, screens —
-exists._
+The first resource, and the pattern every later entity copies.
+
+- **Backend**: `CompanyController` is an explicit resource controller — no
+  shared base controller (a deliberate choice; duplication across the four
+  entities is removed one layer down, in shared Actions and React
+  primitives, not by inheriting a generic `ResourceController`). Three
+  single-purpose actions (`CreateCompany`, `UpdateCompany`, `DeleteCompany`)
+  hold the business rules; `StoreCompanyRequest`/`UpdateCompanyRequest`
+  validate shape only, and `App\Rules\ValidEmailAddress` is the bridge that
+  lets `EmailAddress` (the value object that decides validity) fail as an
+  ordinary field error instead of an uncaught exception when a form submits
+  a malformed address.
+- **The dependent-check is real but currently empty.** `Company::dependentCounts()`
+  returns `[]` today; `DeleteCompany` already refuses a delete whenever it
+  isn't, via `RecordHasDependentsException` (ADR-0005). Contacts (T6) and
+  deals (T7) add entries to that method — the refusal path itself needs no
+  new code.
+- **Reads are never scoped by owner** — `CompanyPolicy::viewAny`/`view` are
+  unconditional; only `delete` checks owner-or-admin. Every later policy
+  follows the same shape.
+- **Search** goes through `Company::scopeSearch()`, an `ILIKE` with an
+  explicit `ESCAPE` clause so a literal `%` or `_` typed into the search box
+  matches only itself.
+- **Pagination is offset-based**, 25 per page — see
+  [ADR-0003](adr/0003-offset-pagination-instead-of-keyset.md).
+- **Frontend**: four shared primitives are introduced here and reused by
+  every later entity — `<ResourceTable>` (column-config-driven, sortable,
+  empty state), `<ResourceForm>` (field-config-driven, inline errors),
+  `<StatusBadge>` (presentation only; each entity maps its own enum to a
+  badge variant, e.g. `companyStatusVariant`), and `<ConfirmDelete>` (a
+  dialog wrapping `router.delete`, so a `RecordHasDependentsException`
+  refusal surfaces as a flashed error instead of a silent failure).
 
 ### Contacts
 
