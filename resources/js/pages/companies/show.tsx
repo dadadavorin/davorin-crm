@@ -5,15 +5,24 @@ import { StatusBadge } from '@/components/status-badge';
 import { Button } from '@/components/ui/button';
 import { companyStatusVariant } from '@/lib/company-status';
 import { contactStatusVariant } from '@/lib/contact-status';
+import { dealStageVariant } from '@/lib/deal-stage';
+import { formatMoney } from '@/lib/money';
 import CompanyController from '@/actions/App/Http/Controllers/CompanyController';
 import { dashboard } from '@/routes';
 import { edit, index } from '@/routes/companies';
 import { show as showContact } from '@/routes/contacts';
-import type { BreadcrumbItem, Company, CompanyContact } from '@/types';
+import { show as showDeal } from '@/routes/deals';
+import type {
+    BreadcrumbItem,
+    Company,
+    CompanyContact,
+    CompanyDeal,
+} from '@/types';
 
 type Props = {
     company: Company;
     contacts: CompanyContact[];
+    deals: CompanyDeal[];
 };
 
 function Field({ label, value }: { label: string; value: React.ReactNode }) {
@@ -25,7 +34,7 @@ function Field({ label, value }: { label: string; value: React.ReactNode }) {
     );
 }
 
-export default function CompaniesShow({ company, contacts }: Props) {
+export default function CompaniesShow({ company, contacts, deals }: Props) {
     return (
         <>
             <Head title={company.name} />
@@ -91,6 +100,42 @@ export default function CompaniesShow({ company, contacts }: Props) {
                                             contact.status,
                                         )}
                                     />
+                                </li>
+                            ))}
+                        </ul>
+                    )}
+                </div>
+
+                <div className="border-sidebar-border/70 dark:border-sidebar-border rounded-xl border p-6">
+                    <h2 className="mb-4 text-sm font-semibold">Deals</h2>
+                    {deals.length === 0 ? (
+                        <p className="text-muted-foreground text-sm">
+                            No deals yet.
+                        </p>
+                    ) : (
+                        <ul className="divide-sidebar-border/70 dark:divide-sidebar-border divide-y">
+                            {deals.map((deal) => (
+                                <li
+                                    key={deal.id}
+                                    className="flex items-center justify-between gap-4 py-2"
+                                >
+                                    <Link
+                                        href={showDeal.url(deal.id)}
+                                        className="text-sm hover:underline"
+                                    >
+                                        {deal.title}
+                                    </Link>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-muted-foreground text-xs">
+                                            {formatMoney(deal.value_minor)}
+                                        </span>
+                                        <StatusBadge
+                                            label={deal.stage_label}
+                                            variant={dealStageVariant(
+                                                deal.stage,
+                                            )}
+                                        />
+                                    </div>
                                 </li>
                             ))}
                         </ul>

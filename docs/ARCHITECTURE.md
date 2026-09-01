@@ -157,8 +157,46 @@ NULL`, so a soft-deleted contact's address can be reused while a live
 
 ### Deals
 
-_Filled in once Deals exists, including the terminal-stage guard and the
-asymmetric delete behavior between companies and contacts._
+The third resource, and the first with money and a terminal state. Reuses
+every shared primitive from Companies and Contacts unchanged.
+
+- **`DealStage`**: `New → Qualified → Proposal → Negotiation → Won|Lost`.
+  `Won` and `Lost` are terminal — `allowedTransitions()` returns nothing for
+  either, so `MoveCardAction::canTransitionTo()` already refuses every drag
+  out of them without any deal-specific code in the board engine. Reopening
+  a terminal deal to `Negotiation` is a deliberate exception to that same
+  enum's transition graph, not a transition it allows: `Deal::booted()`
+  registers a `saving` listener that permits a `stage` write off a terminal
+  value only when the target is `Negotiation`, and rejects every other one —
+  including a direct `save()` that bypasses `UpdateDealRequest` and
+  `MoveCardAction` entirely. `ReopenDeal` is the one named action that
+  performs that write; the board can never reach it because `canTransitionTo()`
+  still says no, which is what keeps "reachable only from the detail page,
+  never a drag" true without a second guard.
+- **Money**: `value_minor` is nullable — a deal's estimated value is often
+  unknown before qualification — cast through `MoneyCast` (ADR-0002). The
+  create/edit form collects it as a decimal string (`"1500.50"`); `Money::
+  fromDecimalString()`/`toDecimalString()` are the exact, non-rounding
+  boundary conversions between that string and minor units, validated by
+  `App\Rules\ValidMoneyAmount` the same way `ValidEmailAddress` bridges
+  `EmailAddress` into a Form Request.
+- **`company_id` is a required FK**; `primary_contact_id` is nullable and,
+  when set, is validated against the deal's own `company_id` by
+  `App\Rules\ContactBelongsToCompany` — a contact from a different company
+  would misrepresent who the deal is actually with.
+- **The delete asymmetry extends one level further (ADR-0005).**
+  `Company::dependentCounts()` now has a real `deals` entry alongside
+  `contacts`, so a company with live deals cannot be deleted. `DeleteContact`
+  nulls `primary_contact_id` on every live deal that named it, in one bulk
+  update inside the same transaction as the soft delete — never blocked,
+  the same shape as the contacts/companies asymmetry it extends.
+- **Company and contact detail pages list their deals** — the company's via
+  `deals.company_id`, the contact's via `deals.primary_contact_id` — plain
+  scoped queries, not a new shared primitive.
+- Nothing depends on a deal yet, so `DeleteDeal` is never refused; quotes
+  (T8) will be the first thing that can.
+
+### Quotes
 
 ### Quotes
 

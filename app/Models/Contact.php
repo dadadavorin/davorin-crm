@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
 
@@ -64,6 +65,18 @@ class Contact extends Model implements HasBoardStatus
     public function owner(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    /**
+     * Deals this contact is the primary contact on. Deleting a contact
+     * nulls `primary_contact_id` here rather than being refused
+     * (`DeleteContact`) — the column is nullable by design.
+     *
+     * @return HasMany<Deal, $this>
+     */
+    public function deals(): HasMany
+    {
+        return $this->hasMany(Deal::class, 'primary_contact_id');
     }
 
     public static function boardStatusEnum(): string

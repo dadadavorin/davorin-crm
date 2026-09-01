@@ -7,10 +7,9 @@ namespace Tests\Fixtures;
 use App\Models\Company;
 
 /**
- * Exercises `DeleteCompany`'s dependent-check branch before any real
- * dependent relation (contacts, deals) exists. T6 and T7 give
- * `Company::dependentCounts()` real cases; this fixture stands in for that
- * until then.
+ * A fixed, hand-picked count pair for asserting the exact
+ * `RecordHasDependentsException` message shape independent of whatever
+ * counts the real `contacts`/`deals` cases happen to use elsewhere.
  */
 class CompanyWithDependents extends Company
 {

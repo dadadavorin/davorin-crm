@@ -68,6 +68,14 @@ class Company extends Model implements HasBoardStatus
         return $this->hasMany(Contact::class);
     }
 
+    /**
+     * @return HasMany<Deal, $this>
+     */
+    public function deals(): HasMany
+    {
+        return $this->hasMany(Deal::class);
+    }
+
     public static function boardStatusEnum(): string
     {
         return CompanyStatus::class;
@@ -105,8 +113,7 @@ class Company extends Model implements HasBoardStatus
 
     /**
      * Live (non-deleted) record counts that block this company's deletion,
-     * keyed by plural relation label. Deals (T7) add a second entry here,
-     * not a new call site in `DeleteCompany`.
+     * keyed by plural relation label.
      *
      * @return array<string, int>
      */
@@ -114,6 +121,7 @@ class Company extends Model implements HasBoardStatus
     {
         return array_filter([
             'contacts' => $this->contacts()->count(),
+            'deals' => $this->deals()->count(),
         ], fn (int $count): bool => $count > 0);
     }
 

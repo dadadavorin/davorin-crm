@@ -20,7 +20,11 @@ type SharedFieldProps = {
 };
 
 export type ResourceFormField =
-    | (SharedFieldProps & { type: 'text'; defaultValue?: string })
+    | (SharedFieldProps & {
+          type: 'text';
+          defaultValue?: string;
+          inputType?: 'text' | 'date';
+      })
     | (SharedFieldProps & { type: 'textarea'; defaultValue?: string })
     | (SharedFieldProps & {
           type: 'select';
@@ -111,6 +115,7 @@ export function ResourceForm({
                                     <Input
                                         id={field.name}
                                         name={field.name}
+                                        type={field.inputType ?? 'text'}
                                         defaultValue={field.defaultValue}
                                         placeholder={field.placeholder}
                                         required={field.required}

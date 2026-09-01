@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Feature\Contact;
 
 use App\Models\Contact;
+use App\Models\Deal;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia as Assert;
@@ -43,6 +44,20 @@ class ContactShowTest extends TestCase
             ->get(route('contacts.show', $contact))
             ->assertOk()
             ->assertInertia(fn (Assert $page) => $page->where('contact.company', null));
+    }
+
+    public function test_the_contact_page_lists_deals_where_they_are_the_primary_contact(): void
+    {
+        $user = User::factory()->create();
+        $contact = Contact::factory()->create();
+        Deal::factory()->create(['primary_contact_id' => $contact->id, 'title' => 'Their Deal']);
+
+        $this->actingAs($user)
+            ->get(route('contacts.show', $contact))
+            ->assertOk()
+            ->assertInertia(fn (Assert $page) => $page
+                ->has('deals', 1)
+                ->where('deals.0.title', 'Their Deal'));
     }
 
     public function test_a_soft_deleted_contact_is_not_found(): void

@@ -14,6 +14,7 @@ use App\Http\Requests\Company\StoreCompanyRequest;
 use App\Http\Requests\Company\UpdateCompanyRequest;
 use App\Models\Company;
 use App\Models\Contact;
+use App\Models\Deal;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -97,6 +98,11 @@ final class CompanyController extends Controller
             ->orderBy('last_name')
             ->get(['id', 'first_name', 'last_name', 'status']);
 
+        $deals = Deal::query()
+            ->where('company_id', $company->id)
+            ->orderBy('title')
+            ->get(['id', 'title', 'stage', 'value_minor']);
+
         return Inertia::render('companies/show', [
             'company' => $this->present($company),
             'contacts' => $contacts->map(fn (Contact $contact): array => [
@@ -104,6 +110,13 @@ final class CompanyController extends Controller
                 'name' => trim("{$contact->first_name} {$contact->last_name}"),
                 'status' => $contact->status->value,
                 'status_label' => $contact->status->label(),
+            ])->all(),
+            'deals' => $deals->map(fn (Deal $deal): array => [
+                'id' => $deal->id,
+                'title' => $deal->title,
+                'stage' => $deal->stage->value,
+                'stage_label' => $deal->stage->label(),
+                'value_minor' => $deal->value_minor?->minorUnits,
             ])->all(),
         ]);
     }
