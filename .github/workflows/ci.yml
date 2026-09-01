@@ -53,6 +53,17 @@ jobs:
       - name: Generate application key
         run: php artisan key:generate
 
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install frontend dependencies
+        run: npm ci
+
+      - name: Build frontend assets
+        run: npm run build
+
       - name: Lint
         run: composer lint
 
@@ -72,7 +83,7 @@ jobs:
   #
   #     - uses: actions/setup-node@v4
   #       with:
-  #         node-version: "20"
+  #         node-version: "22"
   #         cache: npm
   #
   #     - name: Install dependencies
@@ -105,7 +116,7 @@ jobs:
   #
   #     - uses: actions/setup-node@v4
   #       with:
-  #         node-version: "20"
+  #         node-version: "22"
   #         cache: npm
   #         cache-dependency-path: e2e/package-lock.json
   #
