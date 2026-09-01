@@ -33,6 +33,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::resource('deals', DealController::class);
 
     Route::get('quotes/board', [QuoteController::class, 'board'])->name('quotes.board');
+    Route::get('quotes/{quote}/pdf', [QuoteController::class, 'pdf'])->name('quotes.pdf');
     Route::post('quotes/{quote}/reopen', [QuoteController::class, 'reopen'])->name('quotes.reopen');
     Route::resource('quotes', QuoteController::class);
 });

@@ -381,8 +381,38 @@ deletion, a **nullable** one nulls out instead.
 
 ## PDF export
 
-_Filled in once quote PDF export exists: the render pipeline, the DejaVu font
-registration, and why nothing in the template is resolved live._
+`GET /quotes/{quote}/pdf` streams a quote as a PDF, policy-checked the same
+way `quotes.show` is (`QuotePolicy::view`). `barryvdh/laravel-dompdf` wraps
+`dompdf`, a pure-PHP renderer — no headless Chromium, no Node, in the
+production image.
+
+- **`QuotePdfRenderer`** (`app/Services/QuotePdfRenderer.php`) is the one
+  place `resources/views/pdf/quote.blade.php` is rendered to bytes. Its own
+  docblock carries the pipeline diagram. `memory_limit` is raised explicitly
+  for the duration of a render — dompdf holds the whole render tree in
+  memory, and a 50-item quote's table comfortably exceeds the default `128M`
+  — and restored afterward.
+- **DejaVu Sans is registered and embedded before the template ever loads.**
+  dompdf's own default font resolves to a base-14 core font (Times) with no
+  embedded glyphs, so Croatian diacritics (č, ć, ž, š, đ) — present in the
+  seeded demo data — render as garbage without this. The four variants
+  (`resources/fonts/dejavu-sans/*.ttf`) are committed rather than referenced
+  out of `vendor/`, so the font survives a dompdf upgrade that reorganizes
+  its own bundled copy. `QuotePdfRenderer::registerDejaVuSans()` calls
+  dompdf's `FontMetrics::registerFont()` for each variant, guarded by a
+  lookup so a second render — in this request or any later one sharing the
+  same `storage/fonts/` cache — never re-copies them.
+- **Nothing in the template is resolved live.** Every value the view reads —
+  the customer block, the line items, `subtotal_minor`/`tax_minor`/
+  `total_minor` — comes directly off the `Quote`/`QuoteItem` rows handed to
+  it, which are themselves already snapshots (see Snapshot and delete model
+  above). A company rename after a quote is sent changes nothing the PDF
+  shows. The view does no arithmetic of its own: every amount is already a
+  formatted string from `Money::toDecimalString()`.
+- **The template is CSS 2.1 only** — floats and tables for layout, no
+  flexbox or grid — since dompdf's CSS support tops out there. A `<thead>`
+  repeats on every page a multi-item table spans, so a 50-item quote
+  paginates without losing its column headers or dropping rows.
 
 ## Deployment topology
 
