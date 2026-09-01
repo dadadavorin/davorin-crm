@@ -6,6 +6,7 @@ namespace Tests\Feature\Deal;
 
 use App\Enums\UserRole;
 use App\Models\Deal;
+use App\Models\Quote;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -56,6 +57,20 @@ class DealDestroyTest extends TestCase
         $this->actingAs($stranger)
             ->delete(route('deals.destroy', $deal))
             ->assertForbidden();
+
+        $this->assertNotSoftDeleted($deal);
+    }
+
+    public function test_a_deal_with_live_quotes_cannot_be_deleted(): void
+    {
+        $owner = User::factory()->create();
+        $deal = Deal::factory()->create(['owner_id' => $owner->id]);
+        Quote::factory()->create(['deal_id' => $deal->id]);
+
+        $this->actingAs($owner)
+            ->delete(route('deals.destroy', $deal))
+            ->assertRedirect()
+            ->assertSessionHasErrors('record_has_dependents');
 
         $this->assertNotSoftDeleted($deal);
     }

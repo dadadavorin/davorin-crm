@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
 use LogicException;
@@ -100,6 +101,14 @@ class Deal extends Model implements HasBoardStatus
     }
 
     /**
+     * @return HasMany<Quote, $this>
+     */
+    public function quotes(): HasMany
+    {
+        return $this->hasMany(Quote::class);
+    }
+
+    /**
      * @return BelongsTo<User, $this>
      */
     public function owner(): BelongsTo
@@ -149,6 +158,21 @@ class Deal extends Model implements HasBoardStatus
             ],
             'position' => $this->position,
         ];
+    }
+
+    /**
+     * Live (non-deleted) record counts that block this deal's deletion,
+     * keyed by plural relation label. `quotes.deal_id` is a required FK
+     * (T8), the same asymmetry as `Company::dependentCounts()` — a nullable
+     * FK nulls out on delete instead (see `DeleteContact`).
+     *
+     * @return array<string, int>
+     */
+    public function dependentCounts(): array
+    {
+        return array_filter([
+            'quotes' => $this->quotes()->count(),
+        ], fn (int $count): bool => $count > 0);
     }
 
     /**
