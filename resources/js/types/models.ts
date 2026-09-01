@@ -187,3 +187,16 @@ export type QuoteBoardCard = {
     owner: OwnerOption | null;
     position: string;
 };
+
+export type DealQuote = {
+    id: number;
+    number: string;
+    status: QuoteStatusValue;
+    status_label: string;
+    total_minor: number;
+};
+
+export type QuoteDefaults = {
+    valid_until: string;
+    tax_rate: string;
+};

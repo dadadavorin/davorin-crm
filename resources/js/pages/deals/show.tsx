@@ -5,15 +5,18 @@ import { StatusBadge } from '@/components/status-badge';
 import { Button } from '@/components/ui/button';
 import { dealStageVariant } from '@/lib/deal-stage';
 import { formatMoney } from '@/lib/money';
+import { quoteStatusVariant } from '@/lib/quote-status';
 import DealController from '@/actions/App/Http/Controllers/DealController';
 import { show as showCompany } from '@/routes/companies';
 import { show as showContact } from '@/routes/contacts';
+import { edit as editQuote } from '@/routes/quotes';
 import { dashboard } from '@/routes';
 import { edit, index } from '@/routes/deals';
-import type { BreadcrumbItem, Deal } from '@/types';
+import type { BreadcrumbItem, Deal, DealQuote } from '@/types';
 
 type Props = {
     deal: Deal;
+    quotes: DealQuote[];
 };
 
 function Field({ label, value }: { label: string; value: React.ReactNode }) {
@@ -25,7 +28,7 @@ function Field({ label, value }: { label: string; value: React.ReactNode }) {
     );
 }
 
-export default function DealsShow({ deal }: Props) {
+export default function DealsShow({ deal, quotes }: Props) {
     const reopen = () => {
         router.post(
             DealController.reopen(deal.id).url,
@@ -104,6 +107,42 @@ export default function DealsShow({ deal }: Props) {
                         }
                     />
                     <Field label="Owner" value={deal.owner?.name ?? '—'} />
+                </div>
+
+                <div className="border-sidebar-border/70 dark:border-sidebar-border rounded-xl border p-6">
+                    <h2 className="mb-4 text-sm font-semibold">Quotes</h2>
+                    {quotes.length === 0 ? (
+                        <p className="text-muted-foreground text-sm">
+                            No quotes yet.
+                        </p>
+                    ) : (
+                        <ul className="divide-sidebar-border/70 dark:divide-sidebar-border divide-y">
+                            {quotes.map((quote) => (
+                                <li
+                                    key={quote.id}
+                                    className="flex items-center justify-between gap-4 py-2"
+                                >
+                                    <Link
+                                        href={editQuote.url(quote.id)}
+                                        className="text-sm hover:underline"
+                                    >
+                                        {quote.number}
+                                    </Link>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-muted-foreground text-xs">
+                                            {formatMoney(quote.total_minor)}
+                                        </span>
+                                        <StatusBadge
+                                            label={quote.status_label}
+                                            variant={quoteStatusVariant(
+                                                quote.status,
+                                            )}
+                                        />
+                                    </div>
+                                </li>
+                            ))}
+                        </ul>
+                    )}
                 </div>
             </div>
         </>

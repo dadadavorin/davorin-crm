@@ -195,6 +195,16 @@ fromDecimalString()`/`toDecimalString()` are the exact, non-rounding
   scoped queries, not a new shared primitive.
 - Nothing depends on a deal yet, so `DeleteDeal` is never refused; quotes
   (T8) will be the first thing that can.
+- **The deal-board shortcut** (T9) puts a "Create quote" action on every deal
+  card: it opens a small dialog for the two fields a quote doesn't otherwise
+  default for itself (`valid_until`, `tax_rate`) and, on submit, creates a
+  linked `Draft` quote without leaving the board. `CreateQuoteForDeal` is a
+  thin wrapper around `CreateQuote` (T8) — it supplies the deal, today as the
+  issue date and an empty item set, then delegates numbering, the customer
+  block snapshot and totals to the exact same mechanics a standalone create
+  uses. It never writes to the deal itself. The deal detail page lists its
+  quotes the same way the company and contact pages list theirs above — a
+  plain query scoped to `deal_id`.
 
 ### Quotes
 
