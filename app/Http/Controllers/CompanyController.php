@@ -7,6 +7,8 @@ namespace App\Http\Controllers;
 use App\Actions\Company\CreateCompany;
 use App\Actions\Company\DeleteCompany;
 use App\Actions\Company\UpdateCompany;
+use App\Board\BoardBuilder;
+use App\Board\BoardColumn;
 use App\Enums\CompanyStatus;
 use App\Http\Requests\Company\StoreCompanyRequest;
 use App\Http\Requests\Company\UpdateCompanyRequest;
@@ -49,6 +51,15 @@ final class CompanyController extends Controller
                 'sort' => $sort,
                 'direction' => $direction,
             ],
+        ]);
+    }
+
+    public function board(BoardBuilder $builder): Response
+    {
+        $this->authorize('viewAny', Company::class);
+
+        return Inertia::render('companies/board', [
+            'columns' => array_map(fn (BoardColumn $column): array => $column->toArray(), $builder->build(Company::class)),
         ]);
     }
 

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Board\HasBoardStatus;
 use App\Enums\CompanyStatus;
 use App\Support\EmailAddress;
 use App\Support\EmailAddressCast;
@@ -26,13 +27,14 @@ use Illuminate\Support\Carbon;
  * @property string|null $phone
  * @property string|null $address
  * @property string|null $notes
+ * @property string $position
  * @property int|null $owner_id
  * @property Carbon|null $deleted_at
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
-#[Fillable(['name', 'status', 'industry', 'website', 'email', 'phone', 'address', 'notes', 'owner_id'])]
-class Company extends Model
+#[Fillable(['name', 'status', 'industry', 'website', 'email', 'phone', 'address', 'notes', 'owner_id', 'position'])]
+class Company extends Model implements HasBoardStatus
 {
     /** @use HasFactory<CompanyFactory> */
     use HasFactory, SoftDeletes;
@@ -45,6 +47,7 @@ class Company extends Model
         return [
             'status' => CompanyStatus::class,
             'email' => EmailAddressCast::class,
+            'position' => 'decimal:10',
         ];
     }
 
@@ -54,6 +57,41 @@ class Company extends Model
     public function owner(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public static function boardStatusEnum(): string
+    {
+        return CompanyStatus::class;
+    }
+
+    public static function boardStatusColumn(): string
+    {
+        return 'status';
+    }
+
+    /**
+     * @return list<string>
+     */
+    public static function boardCardRelations(): array
+    {
+        return ['owner:id,name'];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function toBoardCard(): array
+    {
+        return [
+            'id' => $this->id,
+            'name' => $this->name,
+            'industry' => $this->industry,
+            'owner' => $this->owner === null ? null : [
+                'id' => $this->owner->id,
+                'name' => $this->owner->name,
+            ],
+            'position' => $this->position,
+        ];
     }
 
     /**

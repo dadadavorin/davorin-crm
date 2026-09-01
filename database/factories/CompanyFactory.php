@@ -14,6 +14,8 @@ use Illuminate\Database\Eloquent\Factories\Factory;
  */
 class CompanyFactory extends Factory
 {
+    private static int $positionSequence = 0;
+
     /**
      * @return array<string, mixed>
      */
@@ -29,6 +31,7 @@ class CompanyFactory extends Factory
             'address' => fake()->address(),
             'notes' => fake()->boolean(50) ? fake()->paragraph() : null,
             'owner_id' => User::factory(),
+            'position' => (string) (++self::$positionSequence * 1024),
         ];
     }
 

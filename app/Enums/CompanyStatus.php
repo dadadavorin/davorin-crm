@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Enums;
 
+use App\Enums\Concerns\BoardStatus;
 use App\Enums\Concerns\HasTransitions;
 
 /**
@@ -14,7 +15,7 @@ use App\Enums\Concerns\HasTransitions;
  *    ▲                                    │
  *    └────────────────────────────────────┘
  */
-enum CompanyStatus: string
+enum CompanyStatus: string implements BoardStatus
 {
     use HasTransitions;
 
