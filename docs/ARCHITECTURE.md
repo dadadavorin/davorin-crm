@@ -18,7 +18,7 @@ Http (controllers, Form Requests) → Actions (one use case per class) → Eloqu
 ```
 
 - **Form Requests validate shape only** — present, string, max length.
-  *Validity* is decided by a value object. `EmailAddress`
+  _Validity_ is decided by a value object. `EmailAddress`
   (`app/Support/EmailAddress.php`) is the model: it normalizes (lowercase,
   trim) and validates in its constructor, and normalization happens in
   exactly one place — every write to a normalized column goes through it,

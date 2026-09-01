@@ -11,7 +11,7 @@ silent N+1: four boards, each rendering cards that pull in relations
 (company, contact names on a deal card, for example), where a missing
 eager load turns one query into one-per-card. An `EXPLAIN`-based test —
 asserting a specific index is used, or that a particular plan node is
-absent — would guard the query *plan*, but the plan Postgres picks depends
+absent — would guard the query _plan_, but the plan Postgres picks depends
 on table size and planner statistics: a query that uses an index seek
 against a populated table can use a sequential scan against an empty test
 table, and vice versa. That makes an `EXPLAIN` assertion brittle against
@@ -32,7 +32,7 @@ depending on planner internals that vary between environments.
 
 Rejected. Brittle against local and CI data shape for reasons unrelated to
 the regression being guarded against, and indirect: what actually causes a
-production slowdown from an N+1 is the *number* of queries issued, and a
+production slowdown from an N+1 is the _number_ of queries issued, and a
 query-count assertion tests that directly instead of inferring it from a
 plan.
 

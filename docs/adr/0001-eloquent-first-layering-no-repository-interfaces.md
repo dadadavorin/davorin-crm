@@ -27,7 +27,7 @@ Eloquent models are the persistence layer directly, with no repository
 interface in front of them. Business rules live in single-purpose Action
 classes (`CreateCompany`, `DeleteCompany`, and so on — one use case per
 class), invoked from controllers. Form Requests validate shape only
-(present, string, max length); a value object decides what is *valid*.
+(present, string, max length); a value object decides what is _valid_.
 Backed enums own their own status-transition rules via `HasTransitions`.
 Policies gate authorization on every resource. No framework-free domain
 layer, no repository interfaces, no in-memory fakes.
