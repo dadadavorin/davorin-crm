@@ -49,6 +49,11 @@ export default function QuotesShow({ quote }: Props) {
                             </Button>
                         )}
                         <Button variant="outline" asChild>
+                            <a href={QuoteController.pdf(quote.id).url}>
+                                Download PDF
+                            </a>
+                        </Button>
+                        <Button variant="outline" asChild>
                             <Link href={edit.url(quote.id)}>Edit</Link>
                         </Button>
                         <ConfirmDelete
