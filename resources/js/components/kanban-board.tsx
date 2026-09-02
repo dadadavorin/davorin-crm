@@ -47,7 +47,13 @@ export function KanbanBoard<TCard extends BoardCard>({
     // the capture phase — ahead of every element the event could land on,
     // including ones outside this component's own tree — swallows the one
     // click that follows a real drag, however it's dispatched.
+    //
+    // Not every drag is followed by a click at all (e.g. the keyboard
+    // sensor, or a pointer released outside the window), so the flag also
+    // gets cleared on a short timer after drop — otherwise it would sit
+    // `true` and swallow the next, unrelated click instead.
     const didDragRef = useRef(false);
+    const resetTimeoutRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
     useEffect(() => {
         const swallowPostDragClick = (event: MouseEvent) => {
@@ -56,6 +62,7 @@ export function KanbanBoard<TCard extends BoardCard>({
             }
 
             didDragRef.current = false;
+            clearTimeout(resetTimeoutRef.current);
             event.preventDefault();
             event.stopPropagation();
         };
@@ -64,6 +71,7 @@ export function KanbanBoard<TCard extends BoardCard>({
 
         return () => {
             document.removeEventListener('click', swallowPostDragClick, true);
+            clearTimeout(resetTimeoutRef.current);
         };
     }, []);
 
@@ -76,6 +84,9 @@ export function KanbanBoard<TCard extends BoardCard>({
             }}
             onDragEnd={(event) => {
                 handleDragEnd(event);
+                resetTimeoutRef.current = setTimeout(() => {
+                    didDragRef.current = false;
+                }, 300);
             }}
         >
             <div className="flex h-full flex-1 gap-4 overflow-x-auto pb-4">
