@@ -416,5 +416,42 @@ production image.
 
 ## Deployment topology
 
-_Filled in at the production deploy: the single-container nginx + php-fpm
-shape, the injected `PORT`, and how migrations run as a release step._
+One container, one origin:
+
+```
+Browser ──HTTPS──> Railway service ─┬─ nginx  *.php or unmatched path → php-fpm → Laravel
+                                    ├─ nginx  an existing file        → served directly
+                                    ├─ php-fpm  (backgrounded)
+                                    └─ schedule:work  (backgrounded)
+                                                             │
+                                            Railway managed PostgreSQL 18
+```
+
+`Dockerfile` builds it in two stages. The build stage is PHP-first with Node
+layered on top, not two independent stages — `npm run build` runs the
+Wayfinder Vite plugin, which shells out to `php artisan wayfinder:generate`
+to regenerate `resources/js/{routes,actions,wayfinder}` from the real route
+list before Vite bundles anything, so the frontend build needs a bootable
+Laravel app (`vendor/` installed, an `APP_KEY`) before it needs Node at all.
+The runtime stage is `php-fpm-alpine` plus nginx, running both processes in
+one container: php-fpm and the scheduler backgrounded, nginx in the
+foreground so Docker's signals land on the process actually serving traffic.
+
+There is no separate SPA build for nginx to fall back to — this app has no
+client-side router (see [ADR-0006](adr/0006-inertia-instead-of-a-separate-rest-api.md)).
+`docker/nginx/prod.conf.template` sends every non-static request, including a
+hard refresh on a deep Inertia link, through `index.php`; Laravel's own
+router resolves it the same way it would any other request. `__PORT__` in
+that template is substituted by `docker/prod/entrypoint.sh` at boot, since
+Railway injects `PORT` and a hardcoded port only works locally.
+
+Migrations run as a Railway **pre-deploy command** (`railway.json`), not on
+container boot — one release instead of a step that can fall out of sync,
+and no race if a deploy ever scales to multiple replicas. The daily
+`quotes:expire` job runs from `php artisan schedule:work`, backgrounded
+inside the same container rather than a separate Railway cron service; see
+[ADR-0007](adr/0007-in-container-scheduler-instead-of-railway-cron.md).
+
+`docker-compose.prod.yml` runs this exact image against a real Postgres
+locally, in the same one-container shape as Railway — the way the image is
+verified before Railway ever runs it.

@@ -82,8 +82,19 @@ resources/js/    Inertia pages, shared React primitives, the kanban board
 tests/
   Unit/          Value objects, enums, policies
   Feature/       Endpoints, error paths, invariants
-docker/          The dev image, entrypoint and nginx config
+docker/          The dev image, entrypoint and nginx config, plus the
+                 production nginx config and entrypoint under docker/prod/
 ```
+
+## Deployment
+
+`Dockerfile` builds a single production image (php-fpm and nginx in one
+container); `docker-compose.prod.yml` runs that exact image against a real
+Postgres locally, the same shape as the hosted deployment, before it ever
+runs anywhere else. `railway.json` configures the hosted deploy — a
+pre-deploy migration step and a health check against `/api/v1/health`. See
+[Deployment topology](docs/ARCHITECTURE.md#deployment-topology) for the full
+shape, including how the daily `quotes:expire` job runs.
 
 ## Architecture decisions
 
