@@ -1,0 +1,30 @@
+server {
+    listen __PORT__;
+    server_name _;
+
+    client_max_body_size 20m;
+
+    gzip on;
+    gzip_types text/css application/javascript application/json;
+
+    root /var/www/html/public;
+    index index.php;
+
+    # There is no separate SPA build to fall back to (see ADR-0006) — every
+    # non-static path, including a hard refresh on a deep Inertia link,
+    # runs through index.php and Laravel's own router resolves it.
+    location / {
+        try_files $uri $uri/ /index.php?$query_string;
+    }
+
+    location ~ \.php$ {
+        fastcgi_pass 127.0.0.1:9000;
+        fastcgi_index index.php;
+        include fastcgi_params;
+        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+    }
+
+    location ~ /\.(?!well-known).* {
+        deny all;
+    }
+}
