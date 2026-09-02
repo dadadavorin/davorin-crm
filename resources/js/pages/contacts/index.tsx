@@ -8,6 +8,7 @@ import {
 import { StatusBadge } from '@/components/status-badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { useRememberEntityView } from '@/hooks/use-remember-entity-view';
 import { contactStatusVariant } from '@/lib/contact-status';
 import { board, create, index, show } from '@/routes/contacts';
 import { dashboard } from '@/routes';
@@ -65,6 +66,7 @@ const columns: ResourceTableColumn<Contact>[] = [
 ];
 
 export default function ContactsIndex({ contacts, filters }: Props) {
+    useRememberEntityView('contacts', 'list');
     const [search, setSearch] = useState(filters.search);
 
     const buildSortHref = (field: string): string => {
