@@ -1,5 +1,6 @@
 import { router } from '@inertiajs/react';
 import { useState } from 'react';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import {
     Dialog,
@@ -39,6 +40,13 @@ export function ConfirmDelete({
         router.delete(href, {
             preserveScroll: true,
             onSuccess: () => setOpen(false),
+            onError: (errors) => {
+                const message = Object.values(errors)[0];
+
+                if (message) {
+                    toast.error(message);
+                }
+            },
             onFinish: () => setProcessing(false),
         });
     };

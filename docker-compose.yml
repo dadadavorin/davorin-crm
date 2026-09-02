@@ -23,6 +23,12 @@ services:
             DB_DATABASE: ${DB_DATABASE:-app}
             DB_USERNAME: ${DB_USERNAME:-app}
             DB_PASSWORD: ${DB_PASSWORD:-secret}
+            # Xdebug's own trigger mode keeps it off request paths, but the
+            # extension stays loaded either way — composer's own PHP process
+            # pays that overhead too, turning a cold `composer install`
+            # several times slower. Nothing needs a debugger attached to run
+            # e2e tests against the stack, so CI overrides this to "off".
+            XDEBUG_MODE: ${XDEBUG_MODE:-debug}
         depends_on:
             db:
                 condition: service_healthy

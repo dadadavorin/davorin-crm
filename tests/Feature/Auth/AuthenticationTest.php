@@ -91,4 +91,22 @@ class AuthenticationTest extends TestCase
 
         $response->assertTooManyRequests();
     }
+
+    public function test_repeated_successful_logins_do_not_trigger_the_rate_limit()
+    {
+        $user = User::factory()->create();
+
+        for ($attempt = 1; $attempt <= 6; $attempt++) {
+            $response = $this->post(route('login.store'), [
+                'email' => $user->email,
+                'password' => 'password',
+            ]);
+
+            $response->assertRedirect(route('dashboard', absolute: false));
+            $this->assertAuthenticated();
+
+            $this->post(route('logout'));
+            $this->assertGuest();
+        }
+    }
 }

@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
+use Illuminate\Auth\Events\Login;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
@@ -29,6 +31,7 @@ class FortifyServiceProvider extends ServiceProvider
     {
         $this->configureViews();
         $this->configureRateLimiting();
+        $this->clearLoginThrottleOnSuccess();
     }
 
     /**
@@ -59,10 +62,7 @@ class FortifyServiceProvider extends ServiceProvider
         });
 
         RateLimiter::for('login', function (Request $request) {
-            $username = $request->string(Fortify::username())->lower()->value();
-            $throttleKey = Str::transliterate($username.'|'.$request->ip());
-
-            return Limit::perMinute(5)->by($throttleKey);
+            return Limit::perMinute(5)->by(self::loginThrottleKey($request));
         });
 
         RateLimiter::for('passkeys', function (Request $request) {
@@ -71,5 +71,31 @@ class FortifyServiceProvider extends ServiceProvider
 
             return Limit::perMinute(10)->by($identifier.'|'.$request->ip());
         });
+    }
+
+    /**
+     * A named limiter (`config('fortify.limiters.login')`) replaces
+     * Fortify's own `EnsureLoginIsNotThrottled` pipeline step entirely —
+     * including the part of it that clears the limiter on a successful
+     * login. `throttle:login` on its own counts every request, successful
+     * or not, so without this a user who simply logs in more than five
+     * times in a minute gets locked out exactly as if those had been five
+     * wrong passwords. `md5($limiterName.$limit->key)` mirrors exactly how
+     * the named-limiter middleware itself derives the cache key
+     * (`Illuminate\Routing\Middleware\ThrottleRequests::handleRequestUsingNamedLimiter`)
+     * — there is no public API to ask it for that key instead.
+     */
+    private function clearLoginThrottleOnSuccess(): void
+    {
+        Event::listen(Login::class, function (): void {
+            RateLimiter::clear(md5('login'.self::loginThrottleKey(request())));
+        });
+    }
+
+    private static function loginThrottleKey(Request $request): string
+    {
+        $username = $request->string(Fortify::username())->lower()->value();
+
+        return Str::transliterate($username.'|'.$request->ip());
     }
 }
