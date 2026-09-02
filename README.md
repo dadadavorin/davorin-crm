@@ -57,6 +57,11 @@ npm run test     # Vitest
 Run these inside the `app` container (`docker compose exec app ...`) or
 locally against a Postgres instance matching `.env`'s `DB_*` values.
 
+Pest reads `.env.testing` instead of `.env`, against its own database
+(`app_test` alongside dev's `app`, same server) — a `composer check` run
+never touches the data `db:seed` populated. The dev container creates that
+database on boot; running outside Docker, create it once by hand.
+
 ## Project layout
 
 ```
