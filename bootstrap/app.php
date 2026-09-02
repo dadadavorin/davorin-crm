@@ -23,6 +23,14 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // Railway terminates TLS at its edge and forwards plain HTTP to the
+        // container, so without this every absolute URL Laravel generates
+        // (asset URLs, redirects) uses the wrong scheme — the browser then
+        // blocks the http:// asset requests as mixed content on the https://
+        // page. The container is never reached except through that edge, so
+        // trusting all proxies is safe here.
+        $middleware->trustProxies(at: '*');
+
         $middleware->encryptCookies(except: ['appearance', 'sidebar_state']);
 
         $middleware->web(append: [
