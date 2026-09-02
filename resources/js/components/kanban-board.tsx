@@ -12,7 +12,7 @@ import {
     verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { type MutableRefObject, type ReactNode, useRef } from 'react';
+import { type ReactNode, useEffect, useRef } from 'react';
 import { useKanbanBoard } from '@/hooks/use-kanban-board';
 import type { BoardCard, BoardColumn } from '@/types/board';
 
@@ -40,11 +40,32 @@ export function KanbanBoard<TCard extends BoardCard>({
 
     // dnd-kit only suppresses the click that would otherwise land on the
     // pointerup target when a `DragOverlay` is used; this board moves cards
-    // in place instead, so the browser's own click still fires on whatever
-    // is under the pointer once a drag clears the distance threshold — e.g.
-    // the card's `Link`, opening it right after the drop. Track whether a
-    // drag actually started and swallow the one click that follows it.
+    // in place instead, so the browser's own click still fires once a drag
+    // clears the distance threshold — landing wherever the pointer ends up,
+    // not necessarily back on the card that was dragged, since the drop
+    // reflows the column. A `click` listener registered on `document` in
+    // the capture phase — ahead of every element the event could land on,
+    // including ones outside this component's own tree — swallows the one
+    // click that follows a real drag, however it's dispatched.
     const didDragRef = useRef(false);
+
+    useEffect(() => {
+        const swallowPostDragClick = (event: MouseEvent) => {
+            if (!didDragRef.current) {
+                return;
+            }
+
+            didDragRef.current = false;
+            event.preventDefault();
+            event.stopPropagation();
+        };
+
+        document.addEventListener('click', swallowPostDragClick, true);
+
+        return () => {
+            document.removeEventListener('click', swallowPostDragClick, true);
+        };
+    }, []);
 
     return (
         <DndContext
@@ -63,7 +84,6 @@ export function KanbanBoard<TCard extends BoardCard>({
                         key={column.status}
                         column={column}
                         renderCard={renderCard}
-                        didDragRef={didDragRef}
                     />
                 ))}
             </div>
@@ -74,13 +94,11 @@ export function KanbanBoard<TCard extends BoardCard>({
 type KanbanColumnProps<TCard extends BoardCard> = {
     column: BoardColumn<TCard>;
     renderCard: (card: TCard) => ReactNode;
-    didDragRef: MutableRefObject<boolean>;
 };
 
 function KanbanColumn<TCard extends BoardCard>({
     column,
     renderCard,
-    didDragRef,
 }: KanbanColumnProps<TCard>) {
     const { setNodeRef } = useDroppable({ id: column.status });
 
@@ -102,11 +120,7 @@ function KanbanColumn<TCard extends BoardCard>({
                     strategy={verticalListSortingStrategy}
                 >
                     {column.cards.map((card) => (
-                        <KanbanCard
-                            key={card.id}
-                            id={card.id}
-                            didDragRef={didDragRef}
-                        >
+                        <KanbanCard key={card.id} id={card.id}>
                             {renderCard(card)}
                         </KanbanCard>
                     ))}
@@ -125,10 +139,9 @@ function KanbanColumn<TCard extends BoardCard>({
 type KanbanCardProps = {
     id: number;
     children: ReactNode;
-    didDragRef: MutableRefObject<boolean>;
 };
 
-function KanbanCard({ id, children, didDragRef }: KanbanCardProps) {
+function KanbanCard({ id, children }: KanbanCardProps) {
     const {
         attributes,
         listeners,
@@ -148,13 +161,6 @@ function KanbanCard({ id, children, didDragRef }: KanbanCardProps) {
             }}
             {...attributes}
             {...listeners}
-            onClickCapture={(event) => {
-                if (didDragRef.current) {
-                    event.preventDefault();
-                    event.stopPropagation();
-                    didDragRef.current = false;
-                }
-            }}
             className="border-sidebar-border/70 dark:border-sidebar-border bg-background touch-none rounded-lg border p-3 shadow-sm"
         >
             {children}
