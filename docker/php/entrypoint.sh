@@ -28,6 +28,15 @@ php artisan migrate --force
 # volume gets the demo data without a later restart trying to re-seed it.
 php artisan db:seed --force
 
+# Everything above runs as root, including composer regenerating
+# bootstrap/cache/*.php — but php-fpm's workers run as www-data (see
+# www.conf). A host bind mount that actually enforces Unix permissions
+# (any real Linux host; Docker Desktop's mount layer is lenient enough
+# not to show this) leaves www-data unable to write storage/logs,
+# storage/framework/{cache,sessions,views} or bootstrap/cache, and every
+# request 500s before it can do anything.
+chown -R www-data:www-data storage bootstrap/cache
+
 # Vite runs backgrounded so php-fpm (the process Docker sends signals to,
 # via "exec") can own the container's foreground and exit code.
 npm run dev -- --host &

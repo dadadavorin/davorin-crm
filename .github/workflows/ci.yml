@@ -128,7 +128,7 @@ jobs:
 
       - name: Wait for the app to become reachable
         run: |
-          timeout 1200 bash -c '
+          timeout 300 bash -c '
             elapsed=0
             until curl -sf http://localhost:8080/api/v1/health && curl -sf http://localhost:8080/ >/dev/null; do
               sleep 5
@@ -140,9 +140,13 @@ jobs:
             done
           '
 
-      - name: Show container logs if the app never became reachable
+      - name: Show container and application logs if the app never became reachable
         if: failure()
-        run: docker compose logs
+        run: |
+          docker compose logs
+          echo "::group::storage/logs/laravel.log"
+          docker compose exec -T app cat storage/logs/laravel.log || true
+          echo "::endgroup::"
 
       - name: Run database migrations
         run: docker compose exec -T app php artisan migrate --force
