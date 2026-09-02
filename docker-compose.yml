@@ -17,12 +17,14 @@ services:
         ports:
             - '${VITE_PORT:-5173}:5173'
         environment:
-            DB_CONNECTION: ${DB_CONNECTION:-pgsql}
-            DB_HOST: ${DB_HOST:-db}
-            DB_PORT: ${DB_PORT:-5432}
-            DB_DATABASE: ${DB_DATABASE:-app}
-            DB_USERNAME: ${DB_USERNAME:-app}
-            DB_PASSWORD: ${DB_PASSWORD:-secret}
+            # DB_* deliberately isn't forwarded here — Laravel already reads
+            # it from the bind-mounted .env (or .env.testing under APP_ENV=
+            # testing). Forwarding it as a real container env var would
+            # shadow that: Dotenv never overwrites a variable the process
+            # environment already has, so .env.testing's separate DB_DATABASE
+            # would be silently ignored and every Pest run would migrate and
+            # RefreshDatabase the same database the dev container just seeded.
+            #
             # Xdebug's own trigger mode keeps it off request paths, but the
             # extension stays loaded either way — composer's own PHP process
             # pays that overhead too, turning a cold `composer install`

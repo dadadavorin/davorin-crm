@@ -53,6 +53,9 @@ jobs:
       - name: Generate application key
         run: php artisan key:generate
 
+      - name: Generate testing application key
+        run: php artisan key:generate --env=testing
+
       - uses: actions/setup-node@v5
         with:
           node-version: "22"
