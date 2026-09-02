@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Http\Controllers\CompanyController;
 use App\Http\Controllers\ContactController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\DealController;
 use App\Http\Controllers\QuoteController;
 use App\Support\InertiaRoute;
@@ -12,14 +13,7 @@ use Illuminate\Support\Facades\Route;
 InertiaRoute::get('/', 'welcome')->name('home');
 
 Route::middleware(['auth', 'verified'])->group(function () {
-    InertiaRoute::get('dashboard', 'dashboard', [
-        'stats' => [
-            'companies' => 0,
-            'contacts' => 0,
-            'deals' => 0,
-            'quotes' => 0,
-        ],
-    ])->name('dashboard');
+    Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     Route::get('companies/board', [CompanyController::class, 'board'])->name('companies.board');
     Route::resource('companies', CompanyController::class);
