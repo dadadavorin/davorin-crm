@@ -24,6 +24,10 @@ fi
 # Production migrates as a pre-deploy step instead, so replicas never race.
 php artisan migrate --force
 
+# A no-op once a user exists (DatabaseSeeder::run() checks), so a fresh
+# volume gets the demo data without a later restart trying to re-seed it.
+php artisan db:seed --force
+
 # Vite runs backgrounded so php-fpm (the process Docker sends signals to,
 # via "exec") can own the container's foreground and exit code.
 npm run dev -- --host &
