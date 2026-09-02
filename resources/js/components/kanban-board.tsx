@@ -12,7 +12,7 @@ import {
     verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import type { ReactNode } from 'react';
+import { type MutableRefObject, type ReactNode, useRef } from 'react';
 import { useKanbanBoard } from '@/hooks/use-kanban-board';
 import type { BoardCard, BoardColumn } from '@/types/board';
 
@@ -38,11 +38,24 @@ export function KanbanBoard<TCard extends BoardCard>({
         useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
     );
 
+    // dnd-kit only suppresses the click that would otherwise land on the
+    // pointerup target when a `DragOverlay` is used; this board moves cards
+    // in place instead, so the browser's own click still fires on whatever
+    // is under the pointer once a drag clears the distance threshold — e.g.
+    // the card's `Link`, opening it right after the drop. Track whether a
+    // drag actually started and swallow the one click that follows it.
+    const didDragRef = useRef(false);
+
     return (
         <DndContext
             sensors={sensors}
             collisionDetection={closestCenter}
-            onDragEnd={handleDragEnd}
+            onDragStart={() => {
+                didDragRef.current = true;
+            }}
+            onDragEnd={(event) => {
+                handleDragEnd(event);
+            }}
         >
             <div className="flex h-full flex-1 gap-4 overflow-x-auto pb-4">
                 {columns.map((column) => (
@@ -50,6 +63,7 @@ export function KanbanBoard<TCard extends BoardCard>({
                         key={column.status}
                         column={column}
                         renderCard={renderCard}
+                        didDragRef={didDragRef}
                     />
                 ))}
             </div>
@@ -60,11 +74,13 @@ export function KanbanBoard<TCard extends BoardCard>({
 type KanbanColumnProps<TCard extends BoardCard> = {
     column: BoardColumn<TCard>;
     renderCard: (card: TCard) => ReactNode;
+    didDragRef: MutableRefObject<boolean>;
 };
 
 function KanbanColumn<TCard extends BoardCard>({
     column,
     renderCard,
+    didDragRef,
 }: KanbanColumnProps<TCard>) {
     const { setNodeRef } = useDroppable({ id: column.status });
 
@@ -86,7 +102,11 @@ function KanbanColumn<TCard extends BoardCard>({
                     strategy={verticalListSortingStrategy}
                 >
                     {column.cards.map((card) => (
-                        <KanbanCard key={card.id} id={card.id}>
+                        <KanbanCard
+                            key={card.id}
+                            id={card.id}
+                            didDragRef={didDragRef}
+                        >
                             {renderCard(card)}
                         </KanbanCard>
                     ))}
@@ -105,9 +125,10 @@ function KanbanColumn<TCard extends BoardCard>({
 type KanbanCardProps = {
     id: number;
     children: ReactNode;
+    didDragRef: MutableRefObject<boolean>;
 };
 
-function KanbanCard({ id, children }: KanbanCardProps) {
+function KanbanCard({ id, children, didDragRef }: KanbanCardProps) {
     const {
         attributes,
         listeners,
@@ -127,6 +148,13 @@ function KanbanCard({ id, children }: KanbanCardProps) {
             }}
             {...attributes}
             {...listeners}
+            onClickCapture={(event) => {
+                if (didDragRef.current) {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    didDragRef.current = false;
+                }
+            }}
             className="border-sidebar-border/70 dark:border-sidebar-border bg-background touch-none rounded-lg border p-3 shadow-sm"
         >
             {children}
