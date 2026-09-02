@@ -2,9 +2,10 @@ import { Head, Link } from '@inertiajs/react';
 import { CreateQuoteFromDealDialog } from '@/components/create-quote-from-deal-dialog';
 import { KanbanBoard } from '@/components/kanban-board';
 import { Button } from '@/components/ui/button';
+import { useRememberEntityView } from '@/hooks/use-remember-entity-view';
 import { formatMoney } from '@/lib/money';
 import { dashboard } from '@/routes';
-import { board, index, show } from '@/routes/deals';
+import { board, create, index, show } from '@/routes/deals';
 import type { BreadcrumbItem, DealBoardCard, QuoteDefaults } from '@/types';
 import type { BoardColumn } from '@/types/board';
 
@@ -14,6 +15,8 @@ type Props = {
 };
 
 export default function DealsBoard({ columns, quoteDefaults }: Props) {
+    useRememberEntityView('deals', 'board');
+
     return (
         <>
             <Head title="Deals board" />
@@ -28,9 +31,14 @@ export default function DealsBoard({ columns, quoteDefaults }: Props) {
                             deals can only be reopened from their detail page.
                         </p>
                     </div>
-                    <Button asChild variant="secondary">
-                        <Link href={index()}>List view</Link>
-                    </Button>
+                    <div className="flex items-center gap-2">
+                        <Button asChild variant="secondary">
+                            <Link href={index()}>List view</Link>
+                        </Button>
+                        <Button asChild>
+                            <Link href={create()}>New deal</Link>
+                        </Button>
+                    </div>
                 </div>
 
                 <KanbanBoard

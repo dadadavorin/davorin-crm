@@ -8,6 +8,7 @@ import {
 import { StatusBadge } from '@/components/status-badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { useRememberEntityView } from '@/hooks/use-remember-entity-view';
 import { dealStageVariant } from '@/lib/deal-stage';
 import { formatMoney } from '@/lib/money';
 import { board, create, index, show } from '@/routes/deals';
@@ -68,6 +69,7 @@ const columns: ResourceTableColumn<Deal>[] = [
 ];
 
 export default function DealsIndex({ deals, filters }: Props) {
+    useRememberEntityView('deals', 'list');
     const [search, setSearch] = useState(filters.search);
 
     const buildSortHref = (field: string): string => {

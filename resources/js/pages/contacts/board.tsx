@@ -1,8 +1,9 @@
 import { Head, Link } from '@inertiajs/react';
 import { KanbanBoard } from '@/components/kanban-board';
 import { Button } from '@/components/ui/button';
+import { useRememberEntityView } from '@/hooks/use-remember-entity-view';
 import { dashboard } from '@/routes';
-import { board, index, show } from '@/routes/contacts';
+import { board, create, index, show } from '@/routes/contacts';
 import type { BreadcrumbItem, ContactBoardCard } from '@/types';
 import type { BoardColumn } from '@/types/board';
 
@@ -11,6 +12,8 @@ type Props = {
 };
 
 export default function ContactsBoard({ columns }: Props) {
+    useRememberEntityView('contacts', 'board');
+
     return (
         <>
             <Head title="Contacts board" />
@@ -24,9 +27,14 @@ export default function ContactsBoard({ columns }: Props) {
                             Drag a card to move it between statuses.
                         </p>
                     </div>
-                    <Button asChild variant="secondary">
-                        <Link href={index()}>List view</Link>
-                    </Button>
+                    <div className="flex items-center gap-2">
+                        <Button asChild variant="secondary">
+                            <Link href={index()}>List view</Link>
+                        </Button>
+                        <Button asChild>
+                            <Link href={create()}>New contact</Link>
+                        </Button>
+                    </div>
                 </div>
 
                 <KanbanBoard

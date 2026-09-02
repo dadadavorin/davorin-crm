@@ -1,9 +1,10 @@
 import { Head, Link } from '@inertiajs/react';
 import { KanbanBoard } from '@/components/kanban-board';
 import { Button } from '@/components/ui/button';
+import { useRememberEntityView } from '@/hooks/use-remember-entity-view';
 import { formatMoney } from '@/lib/money';
 import { dashboard } from '@/routes';
-import { board, index, show } from '@/routes/quotes';
+import { board, create, index, show } from '@/routes/quotes';
 import type { BreadcrumbItem, QuoteBoardCard } from '@/types';
 import type { BoardColumn } from '@/types/board';
 
@@ -12,6 +13,8 @@ type Props = {
 };
 
 export default function QuotesBoard({ columns }: Props) {
+    useRememberEntityView('quotes', 'board');
+
     return (
         <>
             <Head title="Quotes board" />
@@ -27,9 +30,14 @@ export default function QuotesBoard({ columns }: Props) {
                             from their detail page.
                         </p>
                     </div>
-                    <Button asChild variant="secondary">
-                        <Link href={index()}>List view</Link>
-                    </Button>
+                    <div className="flex items-center gap-2">
+                        <Button asChild variant="secondary">
+                            <Link href={index()}>List view</Link>
+                        </Button>
+                        <Button asChild>
+                            <Link href={create()}>New quote</Link>
+                        </Button>
+                    </div>
                 </div>
 
                 <KanbanBoard

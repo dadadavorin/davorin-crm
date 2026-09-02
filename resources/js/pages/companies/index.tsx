@@ -8,6 +8,7 @@ import {
 import { StatusBadge } from '@/components/status-badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { useRememberEntityView } from '@/hooks/use-remember-entity-view';
 import { companyStatusVariant } from '@/lib/company-status';
 import { board, create, index, show } from '@/routes/companies';
 import { dashboard } from '@/routes';
@@ -58,6 +59,7 @@ const columns: ResourceTableColumn<Company>[] = [
 ];
 
 export default function CompaniesIndex({ companies, filters }: Props) {
+    useRememberEntityView('companies', 'list');
     const [search, setSearch] = useState(filters.search);
 
     const buildSortHref = (field: string): string => {

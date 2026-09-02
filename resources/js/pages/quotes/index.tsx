@@ -8,6 +8,7 @@ import {
 import { StatusBadge } from '@/components/status-badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { useRememberEntityView } from '@/hooks/use-remember-entity-view';
 import { formatMoney } from '@/lib/money';
 import { quoteStatusVariant } from '@/lib/quote-status';
 import { board, create, index, show } from '@/routes/quotes';
@@ -68,6 +69,7 @@ const columns: ResourceTableColumn<Quote>[] = [
 ];
 
 export default function QuotesIndex({ quotes, filters }: Props) {
+    useRememberEntityView('quotes', 'list');
     const [search, setSearch] = useState(filters.search);
 
     const buildSortHref = (field: string): string => {
