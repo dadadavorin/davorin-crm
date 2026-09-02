@@ -4,8 +4,8 @@ A CRM for companies, contacts, deals and quotes: a single Laravel application
 serving an Inertia + React frontend, with one JSON API exception for the
 kanban board (see [ADR-0006](adr/0006-inertia-instead-of-a-separate-rest-api.md)).
 
-This document is filled in as the application is built. Each section below is
-owned by the task named in it.
+This document is filled in as the application is built, one section per
+feature area.
 
 ## Layering
 
@@ -22,7 +22,7 @@ Http (controllers, Form Requests) → Actions (one use case per class) → Eloqu
   (`app/Support/EmailAddress.php`) is the model: it normalizes (lowercase,
   trim) and validates in its constructor, and normalization happens in
   exactly one place — every write to a normalized column goes through it,
-  which is what lets the partial unique index on `contacts.email` (T6) rely
+  which is what lets the partial unique index on `contacts.email` rely
   on a single canonical form.
 - **Money** (`app/Support/Money.php`) is a `final readonly` value object
   wrapping integer minor units, with `MoneyCast` bridging it to and from an
@@ -76,8 +76,8 @@ handling — a redirect back with errors flashed, not a 422 body — and the
 shape, not just validation failures.
 
 The one route that deliberately skips this Inertia path entirely is the
-board move endpoint, `POST /api/v1/boards/{entity}/{id}/move`
-(T5). A drag-and-drop reorder needs a response the frontend can branch on
+board move endpoint, `POST /api/v1/boards/{entity}/{id}/move`. A
+drag-and-drop reorder needs a response the frontend can branch on
 synchronously — succeeded, or rejected with a specific reason — to drive an
 optimistic-update revert, and Inertia's redirect-with-flash behavior can't
 give that to an in-flight `fetch` call. So that one route is plain JSON in
@@ -104,8 +104,8 @@ The first resource, and the pattern every later entity copies.
   a malformed address.
 - **The dependent-check is real but currently empty.** `Company::dependentCounts()`
   returns `[]` today; `DeleteCompany` already refuses a delete whenever it
-  isn't, via `RecordHasDependentsException` (ADR-0005). Contacts (T6) and
-  deals (T7) add entries to that method — the refusal path itself needs no
+  isn't, via `RecordHasDependentsException` (ADR-0005). Contacts and
+  deals add entries to that method — the refusal path itself needs no
   new code.
 - **Reads are never scoped by owner** — `CompanyPolicy::viewAny`/`view` are
   unconditional; only `delete` checks owner-or-admin. Every later policy
@@ -128,7 +128,7 @@ The first resource, and the pattern every later entity copies.
 The second resource. It reuses every shared primitive from Companies
 unchanged — `<ResourceTable>`, `<ResourceForm>`, `<StatusBadge>`,
 `<ConfirmDelete>`, `HasBoardStatus`, `BoardBuilder` and `MoveCardAction` — so
-nothing here required bending the abstractions T4 and T5 introduced.
+nothing here required bending the shared abstractions.
 
 - **`contacts.email` has a partial unique index**, `WHERE deleted_at IS
 NULL`, so a soft-deleted contact's address can be reused while a live
@@ -146,7 +146,7 @@ NULL`, so a soft-deleted contact's address can be reused while a live
   `DeleteCompany` refuses when live contacts exist —
   `Company::dependentCounts()` now has a real `contacts` entry, counted from
   the `contacts()` relation. `DeleteContact`, by contrast, is never refused:
-  nothing depends on a contact yet, and once deals exist (T7),
+  nothing depends on a contact yet, and once deals exist,
   `deals.primary_contact_id` is nullable by design, so a contact's removal
   nulls it there instead of being blocked.
 - **The company detail page lists its live contacts**, each linking to that
@@ -197,11 +197,11 @@ fromDecimalString()`/`toDecimalString()` are the exact, non-rounding
   deal with live quotes the same way `Company::dependentCounts()` blocks a
   company above — `DeleteDeal` refuses via `RecordHasDependentsException`,
   naming the count.
-- **The deal-board shortcut** (T9) puts a "Create quote" action on every deal
+- **The deal-board shortcut** puts a "Create quote" action on every deal
   card: it opens a small dialog for the two fields a quote doesn't otherwise
   default for itself (`valid_until`, `tax_rate`) and, on submit, creates a
   linked `Draft` quote without leaving the board. `CreateQuoteForDeal` is a
-  thin wrapper around `CreateQuote` (T8) — it supplies the deal, today as the
+  thin wrapper around `CreateQuote` — it supplies the deal, today as the
   issue date and an empty item set, then delegates numbering, the customer
   block snapshot and totals to the exact same mechanics a standalone create
   uses. It never writes to the deal itself. The deal detail page lists its
@@ -212,9 +212,9 @@ fromDecimalString()`/`toDecimalString()` are the exact, non-rounding
 
 The fourth resource, and the most complex: a document with its own line
 items, a stored numbering sequence, and a freeze that locks most of it once
-it leaves `Draft`. Reuses the shared frontend primitives from Companies and
-the board engine from T5, contributing its own `QuoteStatus` enum, card
-component and policy like every other entity.
+it leaves `Draft`. Reuses the shared frontend primitives and the board
+engine, contributing its own `QuoteStatus` enum, card component and policy
+like every other entity.
 
 - **`quotes.number`** comes from a Postgres sequence, `quote_number_seq`,
   formatted in PHP as `Q-{year}-{0000}` (`GenerateQuoteNumber`). The
@@ -224,7 +224,7 @@ component and policy like every other entity.
   existence first, per `CONVENTIONS.md` §4.
 - **`QuoteStatus`**: `Draft → Sent → Accepted|Rejected|Expired`. `Accepted`,
   `Rejected` and `Expired` are terminal in the enum's own transition graph,
-  the same shape as `DealStage`'s `Won`/`Lost` (T7) — the board
+  the same shape as `DealStage`'s `Won`/`Lost` — the board
   (`MoveCardAction::canTransitionTo()`) refuses every drag out of them.
   `Expired` is set by the `quotes:expire` scheduled command
   (`app/Console/Commands/ExpireQuotes.php`, run daily) once `valid_until`
@@ -254,9 +254,9 @@ component and policy like every other entity.
   is not `Draft`, which is what actually stops the bulk `delete()` a
   replace starts with (a bulk relation `delete()`, unlike a single model's
   own `delete()`, does not fire `QuoteItem::booted()`'s per-row guard).
-- **Standalone create is the only creation path in this task** — the create
-  form has a deal picker (`deal_id` is required); the deal-board shortcut
-  (T9) is an additional entry point onto the same mechanics, not a
+- **Standalone create is the only way to create a quote directly** — the
+  create form has a deal picker (`deal_id` is required); the deal-board
+  shortcut is an additional entry point onto the same mechanics, not a
   different one.
 - **CRUD** follows the same shape as the other three entities, with one
   addition: the edit form's line-item table and `tax_rate` field are
